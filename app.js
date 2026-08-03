@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// Aquí ya integré tus códigos reales exactamente como me los pasaste
 const firebaseConfig = {
   apiKey: "AIzaSyAk9ReIO8iVHADCVEa75mREhj1T8vt6Kvc",
   authDomain: "pasion-paraguanera.firebaseapp.com",
@@ -30,7 +29,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const chkMostrarPass = document.getElementById("chk-mostrar-pass");
     const mensajeError = document.getElementById("mensaje-error");
 
-    // Lógica para mostrar/ocultar contraseña
     chkMostrarPass.addEventListener("change", () => {
         if (chkMostrarPass.checked) {
             passAdmin.type = "text";
@@ -39,7 +37,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Lógica de los 3 clics rápidos
     let contadorClics = 0;
     let tiempoClic;
 
@@ -55,7 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Cerrar modal y limpiar campos
     btnCerrarModal.addEventListener("click", () => {
         modalLogin.classList.add("oculto");
         mensajeError.classList.add("oculto");
@@ -65,7 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
         passAdmin.type = "password";
     });
 
-    // Iniciar Sesión
     btnEntrar.addEventListener("click", () => {
         const email = emailAdmin.value;
         const pass = passAdmin.value;
@@ -83,12 +78,10 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     });
 
-    // Cerrar Sesión
     btnSalir.addEventListener("click", () => {
         signOut(auth);
     });
 
-    // Escuchador de estado
     onAuthStateChanged(auth, (user) => {
         if (user) {
             vistaCliente.classList.add("oculto");
