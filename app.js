@@ -1,26 +1,17 @@
-// Importar las funciones de Firebase directamente desde la nube de Google
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-// Configuración de tu proyecto Firebase (Pendiente por llenar con tus datos)
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "tudominio.firebaseapp.com",
-  projectId: "tu-proyecto-id",
-  storageBucket: "tu-proyecto.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef"
+  apiKey: "AIzaSyAk9ReIO8iVHADCVEa75mREhj1T8vt6Kvc",
+  authDomain: "pasion-paraguanera.firebaseapp.com",
+  projectId: "pasion-paraguanera",
+  storageBucket: "pasion-paraguanera.firebasestorage.app",
+  messagingSenderId: "704685201960",
+  appId: "1:704685201960:web:2caff60f1b9efdc2a0731d"
 };
 
-// Inicializar la base de datos
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// Lógica inicial de la interfaz
-document.addEventListener("DOMContentLoaded", () => {
-    const btnLogin = document.getElementById("btn-login");
-    
-    btnLogin.addEventListener("click", () => {
-        alert("¡Estructura web funcionando perfecto! El siguiente paso será conectar Firebase Auth para el Administrador.");
-    });
-});
