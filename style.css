@@ -22,10 +22,9 @@ body {
 h1 {
     color: #e63946;
     margin-bottom: 10px;
-    user-select: none; /* Evita que el texto se sombree al hacer los 3 clics */
+    user-select: none;
 }
 
-/* El cursor cambia para darte una pista de que es clickeable */
 #titulo-secreto {
     cursor: pointer; 
 }
@@ -47,7 +46,6 @@ p {
     color: #999;
 }
 
-/* Botones Principales */
 button {
     background-color: #e63946;
     color: white;
@@ -74,7 +72,6 @@ button:hover {
     background-color: #495057;
 }
 
-/* Grilla del Panel de Control */
 .admin-grid {
     display: flex;
     flex-direction: column;
@@ -96,8 +93,7 @@ button:hover {
     margin-top: 20px;
 }
 
-/* Inputs de Texto */
-input {
+input[type="email"], input[type="password"], input[type="text"] {
     width: 90%;
     padding: 12px;
     margin-bottom: 15px;
@@ -106,7 +102,27 @@ input {
     font-size: 16px;
 }
 
-/* Ventana Oculta (Modal) */
+/* Estilo de la nueva casilla de mostrar contraseña */
+.mostrar-pass-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 90%;
+    margin: 0 auto 15px auto;
+    font-size: 14px;
+    color: #555;
+}
+
+.mostrar-pass-container input[type="checkbox"] {
+    width: auto;
+    margin: 0 8px 0 0;
+    cursor: pointer;
+}
+
+.mostrar-pass-container label {
+    cursor: pointer;
+}
+
 .modal {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -130,7 +146,6 @@ input {
     margin-top: 10px;
 }
 
-/* Clase maestra para esconder elementos */
 .oculto {
     display: none !important;
 }
