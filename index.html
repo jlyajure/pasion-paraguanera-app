@@ -9,7 +9,6 @@
 <body>
     <!-- VISTA DEL CLIENTE (Pública) -->
     <div id="vista-cliente" class="container">
-        <!-- ¡Este título es el botón secreto! -->
         <h1 id="titulo-secreto">Pasión Paraguanera</h1>
         <p>Bienvenido a nuestra plataforma. El catálogo estará disponible pronto.</p>
         <div class="productos-placeholder">
@@ -23,6 +22,13 @@
             <h2>Acceso Propietario</h2>
             <input type="email" id="email-admin" placeholder="Correo de administrador">
             <input type="password" id="pass-admin" placeholder="Contraseña">
+            
+            <!-- Nueva opción para mostrar la clave -->
+            <div class="mostrar-pass-container">
+                <input type="checkbox" id="chk-mostrar-pass">
+                <label for="chk-mostrar-pass">Mostrar contraseña</label>
+            </div>
+
             <button id="btn-entrar">Entrar al Sistema</button>
             <button id="btn-cerrar-modal" class="btn-secundario">Cancelar</button>
             <p id="mensaje-error" class="error oculto">Datos incorrectos. Intenta de nuevo.</p>
@@ -43,7 +49,6 @@
         <button id="btn-salir" class="btn-secundario mt-20">Cerrar Sesión</button>
     </div>
 
-    <!-- Motor conectado a Firebase -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
