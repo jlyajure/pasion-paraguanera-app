@@ -15,13 +15,23 @@ body {
     border-radius: 12px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     text-align: center;
-    max-width: 400px;
-    width: 100%;
+    max-width: 450px;
+    width: 90%;
 }
 
 h1 {
     color: #e63946;
     margin-bottom: 10px;
+    user-select: none; /* Evita que el texto se sombree al hacer los 3 clics */
+}
+
+/* El cursor cambia para darte una pista de que es clickeable */
+#titulo-secreto {
+    cursor: pointer; 
+}
+
+.admin-titulo {
+    color: #1d3557;
 }
 
 p {
@@ -29,8 +39,17 @@ p {
     margin-bottom: 20px;
 }
 
+.productos-placeholder {
+    background-color: #f8f9fa;
+    border: 2px dashed #ccc;
+    padding: 30px;
+    border-radius: 8px;
+    color: #999;
+}
+
+/* Botones Principales */
 button {
-    background-color: #1d3557;
+    background-color: #e63946;
     color: white;
     border: none;
     padding: 12px 24px;
@@ -39,8 +58,79 @@ button {
     font-size: 16px;
     font-weight: bold;
     transition: background-color 0.3s;
+    width: 100%;
+    margin-bottom: 10px;
 }
 
 button:hover {
+    background-color: #c1121f;
+}
+
+.btn-secundario {
+    background-color: #6c757d;
+}
+
+.btn-secundario:hover {
+    background-color: #495057;
+}
+
+/* Grilla del Panel de Control */
+.admin-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-modulo {
+    background-color: #1d3557;
+    text-align: left;
+    padding: 15px;
+}
+
+.btn-modulo:hover {
     background-color: #457b9d;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+/* Inputs de Texto */
+input {
+    width: 90%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+/* Ventana Oculta (Modal) */
+.modal {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-contenido {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    width: 350px;
+    text-align: center;
+}
+
+.error {
+    color: red;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+/* Clase maestra para esconder elementos */
+.oculto {
+    display: none !important;
 }
