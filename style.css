@@ -19,10 +19,13 @@ body {
     width: 90%;
 }
 
-h1 {
-    color: #e63946;
-    margin-bottom: 10px;
+/* Estilos del Logo */
+.logo-tienda {
+    width: 220px;
+    height: auto;
+    margin-bottom: 15px;
     user-select: none;
+    -webkit-user-drag: none; /* Evita que el logo se arrastre al darle clics rápidos */
 }
 
 #titulo-secreto {
@@ -31,6 +34,7 @@ h1 {
 
 .admin-titulo {
     color: #1d3557;
+    margin-bottom: 10px;
 }
 
 p {
@@ -102,7 +106,6 @@ input[type="email"], input[type="password"], input[type="text"] {
     font-size: 16px;
 }
 
-/* Estilo de la nueva casilla de mostrar contraseña */
 .mostrar-pass-container {
     display: flex;
     align-items: center;
