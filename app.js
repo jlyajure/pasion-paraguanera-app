@@ -101,7 +101,6 @@ document.addEventListener("DOMContentLoaded", () => {
         vistaAdmin.classList.remove("oculto");
     });
 
-    // Guardado Rápido (Offline-First)
     formProducto.addEventListener("submit", (e) => {
         e.preventDefault(); 
         btnGuardarProd.disabled = true;
@@ -141,7 +140,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Llenar vitrinas con código BLINDADO
     onSnapshot(collection(db, "productos"), (snapshot) => {
         listaProductosDiv.innerHTML = ""; 
         if (catalogoPublico) catalogoPublico.innerHTML = ""; 
@@ -156,12 +154,10 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 const prod = doc.data();
                 
-                // 1. Validaciones seguras para evitar colapsos por productos viejos mal guardados
                 const nombre = prod.nombre || "Sin nombre";
                 const desc = prod.descripcion || "";
                 const stock = prod.stock || 0;
                 
-                // Forzamos a que el precio sea siempre un número válido
                 const precioNum = typeof prod.precio === 'number' ? prod.precio : parseFloat(prod.precio || 0);
                 const precioFormateado = isNaN(precioNum) ? "0.00" : precioNum.toFixed(2);
                 
@@ -190,7 +186,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         ? `<img src="${prod.foto}" alt="${nombre}">`
                         : `<div style="height: 120px; background-color: #333; border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 30px; margin-bottom: 10px;">📦</div>`;
 
-                    // Construcción del mensaje automático
                     const mensaje = encodeURIComponent(`Hola Pasión Paraguanera, estoy interesado en comprar el producto: ${nombre} (Precio: $${precioFormateado}). ¿Tienen disponibilidad?`);
                     const enlaceWhatsApp = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`;
 
@@ -215,6 +210,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }, (error) => {
         console.error("Error de Firebase:", error);
-        listaProductosDiv.innerHTML = "<p style='color:#ff6b6b;'>⚠️ Error de conexión. Revisa tu internet o la base de datos.</p>";
+        listaProductosDiv.innerHTML = "<p style='color:#ff6b6b;'>⚠️ Error de conexión a la base de datos.</p>";
     });
 });
