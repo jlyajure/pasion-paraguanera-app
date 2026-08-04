@@ -37,7 +37,7 @@ body {
 .subtitulo { color: #90caf9; margin-top: 25px; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 10px; }
 p { color: #b0b0b0; margin-bottom: 20px; }
 
-/* NUEVO: Cuadrícula de la Vitrina del Cliente */
+/* Cuadrícula de la Vitrina del Cliente */
 .catalogo-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -78,7 +78,7 @@ button:disabled { background-color: #555; cursor: not-allowed; }
 
 .mt-20 { margin-top: 20px; }
 
-input[type="email"], input[type="password"], input[type="text"], input[type="number"], textarea {
+input[type="email"], input[type="password"], input[type="text"], input[type="number"], input[type="url"], textarea {
     width: 90%; padding: 12px; margin-bottom: 15px; background-color: #2a2a2a; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 16px; box-sizing: border-box; font-family: inherit;
 }
 input::placeholder, textarea::placeholder { color: #888; }
@@ -86,10 +86,6 @@ textarea { resize: vertical; }
 
 .fila-inputs { display: flex; gap: 10px; width: 90%; margin: 0 auto; }
 .fila-inputs input { width: 100%; }
-
-.input-archivo { width: 90%; margin: 0 auto 15px auto; padding: 10px; background-color: #2a2a2a; color: #bbb; border: 1px dashed #777; border-radius: 6px; display: block; font-size: 14px; cursor: pointer; }
-.input-archivo::file-selector-button { background-color: #4a4e69; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin-right: 15px; font-weight: bold; }
-.input-archivo::file-selector-button:hover { background-color: #22223b; }
 
 .mostrar-pass-container { display: flex; align-items: center; justify-content: flex-start; width: 90%; margin: 0 auto 15px auto; font-size: 14px; color: #bbb; }
 .mostrar-pass-container input[type="checkbox"] { width: auto; margin: 0 8px 0 0; cursor: pointer; }
