@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pasión Paraguanera</title>
     
-    <!-- Ícono de la pestaña del navegador (Favicon) -->
     <link rel="icon" type="image/png" href="logo.png">
-    
-    <!-- Configuración para instalación en celulares (App PWA) -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="logo.png">
     <meta name="theme-color" content="#121212">
@@ -18,7 +15,6 @@
 <body>
     <!-- VISTA DEL CLIENTE (Pública) -->
     <div id="vista-cliente" class="container">
-        <!-- ¡El logo ahora es el botón secreto! -->
         <img src="logo.png" alt="Logo Pasión Paraguanera" id="titulo-secreto" class="logo-tienda">
         
         <p>Bienvenido a nuestra plataforma. El catálogo estará disponible pronto.</p>
@@ -51,12 +47,38 @@
         <p>Gestión interna de Pasión Paraguanera.</p>
         
         <div class="admin-grid">
-            <button class="btn-modulo">📦 Control de Inventario</button>
+            <button id="btn-inventario" class="btn-modulo">📦 Control de Inventario</button>
             <button class="btn-modulo">👥 Gestión de Clientes</button>
             <button class="btn-modulo">📄 Facturación y Pedidos</button>
         </div>
         
         <button id="btn-salir" class="btn-secundario mt-20">Cerrar Sesión</button>
+    </div>
+
+    <!-- MÓDULO DE INVENTARIO -->
+    <div id="modulo-inventario" class="container oculto">
+        <button id="btn-volver-admin" class="btn-secundario btn-pequeno">⬅ Volver al Panel</button>
+        <h2 class="admin-titulo">📦 Inventario</h2>
+        
+        <!-- Formulario para agregar productos -->
+        <form id="form-producto" class="form-inventario">
+            <input type="text" id="prod-nombre" placeholder="Nombre del Producto" required>
+            <textarea id="prod-desc" placeholder="Descripción breve" rows="2" required></textarea>
+            
+            <div class="fila-inputs">
+                <input type="number" id="prod-precio" placeholder="Precio ($)" step="0.01" required>
+                <input type="number" id="prod-stock" placeholder="Stock (Ej: 0)" value="0" required>
+            </div>
+            
+            <input type="text" id="prod-foto" placeholder="Link de foto (Provisional)" disabled>
+            
+            <button type="submit" id="btn-guardar-prod">Guardar Producto</button>
+        </form>
+
+        <h3 class="subtitulo">Productos Registrados</h3>
+        <div id="lista-productos" class="lista-productos">
+            <!-- Aquí irán apareciendo los productos de Firestore -->
+        </div>
     </div>
 
     <script type="module" src="app.js"></script>
