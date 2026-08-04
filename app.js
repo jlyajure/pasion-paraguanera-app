@@ -15,6 +15,9 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// El número del dueño de la tienda
+const NUMERO_WHATSAPP = "584246669816";
+
 document.addEventListener("DOMContentLoaded", () => {
     const vistaCliente = document.getElementById("vista-cliente");
     const vistaAdmin = document.getElementById("vista-admin");
@@ -98,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
         vistaAdmin.classList.remove("oculto");
     });
 
-    // MOTOR NUEVO: Modo Offline-First (Sin await)
+    // Guardado Rápido (Offline-First)
     formProducto.addEventListener("submit", (e) => {
         e.preventDefault(); 
         btnGuardarProd.disabled = true;
@@ -107,9 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const urlFoto = document.getElementById("prod-foto").value;
 
-            // FUEGO Y OLVIDO: Al quitar la palabra "await", el botón no se queda pegado esperando
-            // que la señal viaje desde Falcón hasta el satélite de Google. Firebase lo guarda 
-            // en la memoria de la página al instante y lo sube silenciosamente en segundo plano.
             addDoc(collection(db, "productos"), {
                 nombre: document.getElementById("prod-nombre").value,
                 descripcion: document.getElementById("prod-desc").value,
@@ -141,6 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Llenar vitrinas y generar enlaces de compra
     onSnapshot(collection(db, "productos"), (snapshot) => {
         listaProductosDiv.innerHTML = ""; 
         if (catalogoPublico) catalogoPublico.innerHTML = ""; 
@@ -154,6 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
         snapshot.forEach((doc) => {
             const prod = doc.data();
             
+            // Tarjeta Administrador
             const divAdmin = document.createElement("div");
             divAdmin.classList.add("item-producto");
             const imagenHTMLAdmin = prod.foto 
@@ -170,6 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
             listaProductosDiv.appendChild(divAdmin);
 
+            // Tarjeta Cliente con Botón de WhatsApp
             if (catalogoPublico) {
                 const divCliente = document.createElement("div");
                 divCliente.classList.add("tarjeta-producto");
@@ -177,11 +180,22 @@ document.addEventListener("DOMContentLoaded", () => {
                     ? `<img src="${prod.foto}" alt="${prod.nombre}">`
                     : `<div style="height: 120px; background-color: #333; border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 30px; margin-bottom: 10px;">📦</div>`;
 
+                // Construcción del mensaje automático
+                const mensaje = encodeURIComponent(`Hola Pasión Paraguanera, estoy interesado en comprar el producto: ${prod.nombre} (Precio: $${prod.precio.toFixed(2)}). ¿Tienen disponibilidad?`);
+                const enlaceWhatsApp = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`;
+
                 divCliente.innerHTML = `
-                    ${imagenHTMLCliente}
-                    <h4>${prod.nombre}</h4>
-                    <p class="desc">${prod.descripcion}</p>
-                    <p class="precio">$${prod.precio.toFixed(2)}</p>
+                    <div>
+                        ${imagenHTMLCliente}
+                        <h4>${prod.nombre}</h4>
+                        <p class="desc">${prod.descripcion}</p>
+                    </div>
+                    <div>
+                        <p class="precio">$${prod.precio.toFixed(2)}</p>
+                        <a href="${enlaceWhatsApp}" target="_blank" style="text-decoration: none;">
+                            <button class="btn-whatsapp">🛒 Comprar</button>
+                        </a>
+                    </div>
                 `;
                 catalogoPublico.appendChild(divCliente);
             }
