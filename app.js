@@ -141,7 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Llenar vitrinas y generar enlaces de compra
+    // Llenar vitrinas con código BLINDADO
     onSnapshot(collection(db, "productos"), (snapshot) => {
         listaProductosDiv.innerHTML = ""; 
         if (catalogoPublico) catalogoPublico.innerHTML = ""; 
@@ -153,52 +153,68 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         snapshot.forEach((doc) => {
-            const prod = doc.data();
-            
-            // Tarjeta Administrador
-            const divAdmin = document.createElement("div");
-            divAdmin.classList.add("item-producto");
-            const imagenHTMLAdmin = prod.foto 
-                ? `<img src="${prod.foto}" class="foto-producto-lista" alt="${prod.nombre}">`
-                : `<div class="foto-producto-lista" style="background-color: #333; display: flex; justify-content: center; align-items: center; font-size: 24px;">📦</div>`;
+            try {
+                const prod = doc.data();
+                
+                // 1. Validaciones seguras para evitar colapsos por productos viejos mal guardados
+                const nombre = prod.nombre || "Sin nombre";
+                const desc = prod.descripcion || "";
+                const stock = prod.stock || 0;
+                
+                // Forzamos a que el precio sea siempre un número válido
+                const precioNum = typeof prod.precio === 'number' ? prod.precio : parseFloat(prod.precio || 0);
+                const precioFormateado = isNaN(precioNum) ? "0.00" : precioNum.toFixed(2);
+                
+                // Tarjeta Administrador
+                const divAdmin = document.createElement("div");
+                divAdmin.classList.add("item-producto");
+                const imagenHTMLAdmin = prod.foto 
+                    ? `<img src="${prod.foto}" class="foto-producto-lista" alt="${nombre}">`
+                    : `<div class="foto-producto-lista" style="background-color: #333; display: flex; justify-content: center; align-items: center; font-size: 24px;">📦</div>`;
 
-            divAdmin.innerHTML = `
-                ${imagenHTMLAdmin}
-                <div class="info-producto-lista">
-                    <h4>${prod.nombre}</h4>
-                    <p>${prod.descripcion}</p>
-                    <p class="item-precio-stock">Precio: $${prod.precio.toFixed(2)} | Stock: ${prod.stock}</p>
-                </div>
-            `;
-            listaProductosDiv.appendChild(divAdmin);
-
-            // Tarjeta Cliente con Botón de WhatsApp
-            if (catalogoPublico) {
-                const divCliente = document.createElement("div");
-                divCliente.classList.add("tarjeta-producto");
-                const imagenHTMLCliente = prod.foto 
-                    ? `<img src="${prod.foto}" alt="${prod.nombre}">`
-                    : `<div style="height: 120px; background-color: #333; border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 30px; margin-bottom: 10px;">📦</div>`;
-
-                // Construcción del mensaje automático
-                const mensaje = encodeURIComponent(`Hola Pasión Paraguanera, estoy interesado en comprar el producto: ${prod.nombre} (Precio: $${prod.precio.toFixed(2)}). ¿Tienen disponibilidad?`);
-                const enlaceWhatsApp = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`;
-
-                divCliente.innerHTML = `
-                    <div>
-                        ${imagenHTMLCliente}
-                        <h4>${prod.nombre}</h4>
-                        <p class="desc">${prod.descripcion}</p>
-                    </div>
-                    <div>
-                        <p class="precio">$${prod.precio.toFixed(2)}</p>
-                        <a href="${enlaceWhatsApp}" target="_blank" style="text-decoration: none;">
-                            <button class="btn-whatsapp">🛒 Comprar</button>
-                        </a>
+                divAdmin.innerHTML = `
+                    ${imagenHTMLAdmin}
+                    <div class="info-producto-lista">
+                        <h4>${nombre}</h4>
+                        <p>${desc}</p>
+                        <p class="item-precio-stock">Precio: $${precioFormateado} | Stock: ${stock}</p>
                     </div>
                 `;
-                catalogoPublico.appendChild(divCliente);
+                listaProductosDiv.appendChild(divAdmin);
+
+                // Tarjeta Cliente con Botón de WhatsApp
+                if (catalogoPublico) {
+                    const divCliente = document.createElement("div");
+                    divCliente.classList.add("tarjeta-producto");
+                    const imagenHTMLCliente = prod.foto 
+                        ? `<img src="${prod.foto}" alt="${nombre}">`
+                        : `<div style="height: 120px; background-color: #333; border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 30px; margin-bottom: 10px;">📦</div>`;
+
+                    // Construcción del mensaje automático
+                    const mensaje = encodeURIComponent(`Hola Pasión Paraguanera, estoy interesado en comprar el producto: ${nombre} (Precio: $${precioFormateado}). ¿Tienen disponibilidad?`);
+                    const enlaceWhatsApp = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`;
+
+                    divCliente.innerHTML = `
+                        <div>
+                            ${imagenHTMLCliente}
+                            <h4>${nombre}</h4>
+                            <p class="desc">${desc}</p>
+                        </div>
+                        <div>
+                            <p class="precio">$${precioFormateado}</p>
+                            <a href="${enlaceWhatsApp}" target="_blank" style="text-decoration: none;">
+                                <button class="btn-whatsapp">🛒 Comprar</button>
+                            </a>
+                        </div>
+                    `;
+                    catalogoPublico.appendChild(divCliente);
+                }
+            } catch (errorInterno) {
+                console.error("Error al renderizar un producto específico:", errorInterno);
             }
         });
+    }, (error) => {
+        console.error("Error de Firebase:", error);
+        listaProductosDiv.innerHTML = "<p style='color:#ff6b6b;'>⚠️ Error de conexión. Revisa tu internet o la base de datos.</p>";
     });
 });
