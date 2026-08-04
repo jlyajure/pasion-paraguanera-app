@@ -12,7 +12,7 @@ const firebaseConfig = {
 };
 
 // === ¡AQUÍ VA TU LLAVE DE IMGBB! ===
-const IMGBB_API_KEY = "PEGA_AQUI_TU_LLAVE_DE_IMGBB";
+const IMGBB_API_KEY = "07dd4f0a1180673510c5047ae8b5eec8";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
