@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// === 1. TUS LLAVES DE FIREBASE (Las que ya tenías) ===
 const firebaseConfig = {
   apiKey: "AIzaSyAk9ReIO8iVHADCVEa75mREhj1T8vt6Kvc",
   authDomain: "pasion-paraguanera.firebaseapp.com",
@@ -12,8 +11,7 @@ const firebaseConfig = {
   appId: "1:704685201960:web:2caff60f1b9efdc2a0731d"
 };
 
-// === 2. TU NUEVA LLAVE DE IMGBB ===
-// Pega aquí el código que te dio la página de ImgBB
+// === ¡AQUÍ VA TU LLAVE DE IMGBB! ===
 const IMGBB_API_KEY = "PEGA_AQUI_TU_LLAVE_DE_IMGBB";
 
 const app = initializeApp(firebaseConfig);
@@ -42,7 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnGuardarProd = document.getElementById("btn-guardar-prod");
     const inputFoto = document.getElementById("prod-foto");
 
-    // --- LÓGICA DE LOGIN ---
     chkMostrarPass.addEventListener("change", () => {
         passAdmin.type = chkMostrarPass.checked ? "text" : "password";
     });
@@ -93,7 +90,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // --- LÓGICA DEL INVENTARIO ---
     btnInventario.addEventListener("click", () => {
         vistaAdmin.classList.add("oculto");
         moduloInventario.classList.remove("oculto");
@@ -104,7 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
         vistaAdmin.classList.remove("oculto");
     });
 
-    // Guardar Producto usando ImgBB
     formProducto.addEventListener("submit", async (e) => {
         e.preventDefault(); 
         btnGuardarProd.disabled = true;
@@ -114,7 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
             let urlFoto = "";
             const archivo = inputFoto.files[0];
 
-            // 1. Subir la imagen a ImgBB
             if (archivo) {
                 const formData = new FormData();
                 formData.append("image", archivo);
@@ -127,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const datosImg = await respuesta.json();
                 
                 if(datosImg.success) {
-                    urlFoto = datosImg.data.url; // Obtenemos el link directo de la foto
+                    urlFoto = datosImg.data.url; 
                 } else {
                     throw new Error("Error de ImgBB");
                 }
@@ -135,7 +129,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             btnGuardarProd.textContent = "Guardando datos...";
 
-            // 2. Guardar en Firebase
             await addDoc(collection(db, "productos"), {
                 nombre: document.getElementById("prod-nombre").value,
                 descripcion: document.getElementById("prod-desc").value,
@@ -158,7 +151,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Leer Productos en Tiempo Real
     onSnapshot(collection(db, "productos"), (snapshot) => {
         listaProductosDiv.innerHTML = ""; 
         
