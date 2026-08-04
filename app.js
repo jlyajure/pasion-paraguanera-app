@@ -138,16 +138,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 fechaCreacion: serverTimestamp()
             });
 
+            // REPARACIÓN: Limpiamos y restauramos el botón de inmediato
             formProducto.reset(); 
             document.getElementById("prod-stock").value = "0"; 
-            alert("¡Producto guardado con éxito!");
+            btnGuardarProd.disabled = false;
+            btnGuardarProd.textContent = "Guardar Producto";
             
         } catch (error) {
             console.error("Error al guardar: ", error);
-            alert("Ocurrió un error. Revisa tu conexión o tu llave de ImgBB.");
-        } finally {
+            // REPARACIÓN: Si hay error, soltamos el botón y avisamos
             btnGuardarProd.disabled = false;
-            btnGuardarProd.textContent = "Guardar Producto";
+            btnGuardarProd.textContent = "Error. Intenta de nuevo";
+            setTimeout(() => {
+                btnGuardarProd.textContent = "Guardar Producto";
+            }, 3000);
         }
     });
 
