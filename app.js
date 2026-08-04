@@ -11,7 +11,7 @@ const firebaseConfig = {
   appId: "1:704685201960:web:2caff60f1b9efdc2a0731d"
 };
 
-// === ¡AQUÍ VA TU LLAVE DE IMGBB! ===
+// === ¡TU LLAVE DE IMGBB GUARDADA! ===
 const IMGBB_API_KEY = "07dd4f0a1180673510c5047ae8b5eec8";
 
 const app = initializeApp(firebaseConfig);
@@ -39,6 +39,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const listaProductosDiv = document.getElementById("lista-productos");
     const btnGuardarProd = document.getElementById("btn-guardar-prod");
     const inputFoto = document.getElementById("prod-foto");
+    
+    // NUEVO: Referencia a la vitrina del cliente
+    const catalogoPublico = document.getElementById("catalogo-publico");
 
     chkMostrarPass.addEventListener("change", () => {
         passAdmin.type = chkMostrarPass.checked ? "text" : "password";
@@ -138,7 +141,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 fechaCreacion: serverTimestamp()
             });
 
-            // REPARACIÓN: Limpiamos y restauramos el botón de inmediato
             formProducto.reset(); 
             document.getElementById("prod-stock").value = "0"; 
             btnGuardarProd.disabled = false;
@@ -146,7 +148,6 @@ document.addEventListener("DOMContentLoaded", () => {
             
         } catch (error) {
             console.error("Error al guardar: ", error);
-            // REPARACIÓN: Si hay error, soltamos el botón y avisamos
             btnGuardarProd.disabled = false;
             btnGuardarProd.textContent = "Error. Intenta de nuevo";
             setTimeout(() => {
@@ -155,32 +156,51 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // LEER PRODUCTOS Y LLENAR AMBAS VISTAS
     onSnapshot(collection(db, "productos"), (snapshot) => {
         listaProductosDiv.innerHTML = ""; 
+        catalogoPublico.innerHTML = ""; 
         
         if (snapshot.empty) {
             listaProductosDiv.innerHTML = "<p>No hay productos registrados aún.</p>";
+            catalogoPublico.innerHTML = "<p>El catálogo está vacío por ahora.</p>";
             return;
         }
 
         snapshot.forEach((doc) => {
             const prod = doc.data();
-            const div = document.createElement("div");
-            div.classList.add("item-producto");
             
-            const imagenHTML = prod.foto 
+            // 1. Crear tarjeta para la lista del ADMINISTRADOR
+            const divAdmin = document.createElement("div");
+            divAdmin.classList.add("item-producto");
+            const imagenHTMLAdmin = prod.foto 
                 ? `<img src="${prod.foto}" class="foto-producto-lista" alt="${prod.nombre}">`
                 : `<div class="foto-producto-lista" style="background-color: #333; display: flex; justify-content: center; align-items: center; font-size: 24px;">📦</div>`;
 
-            div.innerHTML = `
-                ${imagenHTML}
+            divAdmin.innerHTML = `
+                ${imagenHTMLAdmin}
                 <div class="info-producto-lista">
                     <h4>${prod.nombre}</h4>
                     <p>${prod.descripcion}</p>
                     <p class="item-precio-stock">Precio: $${prod.precio.toFixed(2)} | Stock: ${prod.stock}</p>
                 </div>
             `;
-            listaProductosDiv.appendChild(div);
+            listaProductosDiv.appendChild(divAdmin);
+
+            // 2. Crear tarjeta bonita para el CLIENTE PÚBLICO
+            const divCliente = document.createElement("div");
+            divCliente.classList.add("tarjeta-producto");
+            const imagenHTMLCliente = prod.foto 
+                ? `<img src="${prod.foto}" alt="${prod.nombre}">`
+                : `<div style="height: 120px; background-color: #333; border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 30px; margin-bottom: 10px;">📦</div>`;
+
+            divCliente.innerHTML = `
+                ${imagenHTMLCliente}
+                <h4>${prod.nombre}</h4>
+                <p class="desc">${prod.descripcion}</p>
+                <p class="precio">$${prod.precio.toFixed(2)}</p>
+            `;
+            catalogoPublico.appendChild(divCliente);
         });
     });
 });
