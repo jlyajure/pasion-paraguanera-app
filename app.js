@@ -11,9 +11,6 @@ const firebaseConfig = {
   appId: "1:704685201960:web:2caff60f1b9efdc2a0731d"
 };
 
-// Tu llave real de ImgBB lista para usar
-const IMGBB_API_KEY = "07dd4f0a1180673510c5047ae8b5eec8";
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -38,7 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const formProducto = document.getElementById("form-producto");
     const listaProductosDiv = document.getElementById("lista-productos");
     const btnGuardarProd = document.getElementById("btn-guardar-prod");
-    const inputFoto = document.getElementById("prod-foto");
     
     const catalogoPublico = document.getElementById("catalogo-publico");
 
@@ -102,32 +98,14 @@ document.addEventListener("DOMContentLoaded", () => {
         vistaAdmin.classList.remove("oculto");
     });
 
+    // MOTOR NUEVO: Ultra rápido, solo guarda el enlace de la imagen
     formProducto.addEventListener("submit", async (e) => {
         e.preventDefault(); 
         btnGuardarProd.disabled = true;
-        btnGuardarProd.textContent = "Subiendo imagen y guardando...";
+        btnGuardarProd.textContent = "Guardando...";
 
         try {
-            let urlFoto = "";
-            const archivo = inputFoto.files[0];
-
-            if (archivo) {
-                const formData = new FormData();
-                formData.append("image", archivo);
-
-                const respuesta = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-                    method: "POST",
-                    body: formData
-                });
-                
-                const datosImg = await respuesta.json();
-                
-                if(datosImg.success) {
-                    urlFoto = datosImg.data.url; 
-                } else {
-                    throw new Error("Error subiendo foto a ImgBB");
-                }
-            }
+            const urlFoto = document.getElementById("prod-foto").value;
 
             await addDoc(collection(db, "productos"), {
                 nombre: document.getElementById("prod-nombre").value,
@@ -138,37 +116,32 @@ document.addEventListener("DOMContentLoaded", () => {
                 fechaCreacion: serverTimestamp()
             });
 
-            // REPARACIÓN BLINDADA: Limpieza absoluta del formulario
             formProducto.reset(); 
             document.getElementById("prod-stock").value = "0"; 
-            inputFoto.value = ""; // Vaciamos el selector de archivo por seguridad
             
             btnGuardarProd.disabled = false;
-            btnGuardarProd.style.backgroundColor = "#4caf50"; // Lo ponemos verde un segundo
+            btnGuardarProd.style.backgroundColor = "#4caf50"; 
             btnGuardarProd.textContent = "¡Producto Guardado!";
             
             setTimeout(() => {
-                btnGuardarProd.style.backgroundColor = ""; // Vuelve a su color original
+                btnGuardarProd.style.backgroundColor = ""; 
                 btnGuardarProd.textContent = "Guardar Producto";
             }, 2500);
             
         } catch (error) {
             console.error("Error al guardar: ", error);
             btnGuardarProd.disabled = false;
-            btnGuardarProd.textContent = "Error. Revisa tu internet";
+            btnGuardarProd.textContent = "Error. Intenta de nuevo";
             setTimeout(() => {
                 btnGuardarProd.textContent = "Guardar Producto";
             }, 3000);
         }
     });
 
+    // Llenar ambas vitrinas (Administrador y Cliente)
     onSnapshot(collection(db, "productos"), (snapshot) => {
         listaProductosDiv.innerHTML = ""; 
-        
-        // Verifica si el catálogo público existe antes de intentar llenarlo
-        if (catalogoPublico) {
-            catalogoPublico.innerHTML = ""; 
-        }
+        if (catalogoPublico) catalogoPublico.innerHTML = ""; 
         
         if (snapshot.empty) {
             listaProductosDiv.innerHTML = "<p>No hay productos registrados aún.</p>";
@@ -179,6 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
         snapshot.forEach((doc) => {
             const prod = doc.data();
             
+            // Tarjeta Administrador
             const divAdmin = document.createElement("div");
             divAdmin.classList.add("item-producto");
             const imagenHTMLAdmin = prod.foto 
@@ -195,6 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
             listaProductosDiv.appendChild(divAdmin);
 
+            // Tarjeta Cliente
             if (catalogoPublico) {
                 const divCliente = document.createElement("div");
                 divCliente.classList.add("tarjeta-producto");
