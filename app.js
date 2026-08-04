@@ -98,8 +98,8 @@ document.addEventListener("DOMContentLoaded", () => {
         vistaAdmin.classList.remove("oculto");
     });
 
-    // MOTOR NUEVO: Ultra rápido, solo guarda el enlace de la imagen
-    formProducto.addEventListener("submit", async (e) => {
+    // MOTOR NUEVO: Modo Offline-First (Sin await)
+    formProducto.addEventListener("submit", (e) => {
         e.preventDefault(); 
         btnGuardarProd.disabled = true;
         btnGuardarProd.textContent = "Guardando...";
@@ -107,7 +107,10 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const urlFoto = document.getElementById("prod-foto").value;
 
-            await addDoc(collection(db, "productos"), {
+            // FUEGO Y OLVIDO: Al quitar la palabra "await", el botón no se queda pegado esperando
+            // que la señal viaje desde Falcón hasta el satélite de Google. Firebase lo guarda 
+            // en la memoria de la página al instante y lo sube silenciosamente en segundo plano.
+            addDoc(collection(db, "productos"), {
                 nombre: document.getElementById("prod-nombre").value,
                 descripcion: document.getElementById("prod-desc").value,
                 precio: parseFloat(document.getElementById("prod-precio").value),
@@ -138,7 +141,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Llenar ambas vitrinas (Administrador y Cliente)
     onSnapshot(collection(db, "productos"), (snapshot) => {
         listaProductosDiv.innerHTML = ""; 
         if (catalogoPublico) catalogoPublico.innerHTML = ""; 
@@ -152,7 +154,6 @@ document.addEventListener("DOMContentLoaded", () => {
         snapshot.forEach((doc) => {
             const prod = doc.data();
             
-            // Tarjeta Administrador
             const divAdmin = document.createElement("div");
             divAdmin.classList.add("item-producto");
             const imagenHTMLAdmin = prod.foto 
@@ -169,7 +170,6 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
             listaProductosDiv.appendChild(divAdmin);
 
-            // Tarjeta Cliente
             if (catalogoPublico) {
                 const divCliente = document.createElement("div");
                 divCliente.classList.add("tarjeta-producto");
