@@ -17,9 +17,11 @@
     <div id="vista-cliente" class="container">
         <img src="logo.png" alt="Logo Pasión Paraguanera" id="titulo-secreto" class="logo-tienda">
         
-        <p>Bienvenido a nuestra plataforma. El catálogo estará disponible pronto.</p>
-        <div class="productos-placeholder">
-            <p>🛒 Espacio para mostrar tus productos a los clientes...</p>
+        <p>Catálogo Oficial</p>
+        
+        <!-- VITRINA PÚBLICA DE PRODUCTOS -->
+        <div id="catalogo-publico" class="catalogo-grid">
+            <!-- Los productos de Firestore aparecerán aquí automáticamente -->
         </div>
     </div>
 
@@ -60,7 +62,6 @@
         <button id="btn-volver-admin" class="btn-secundario btn-pequeno">⬅ Volver al Panel</button>
         <h2 class="admin-titulo">📦 Inventario</h2>
         
-        <!-- Formulario para agregar productos -->
         <form id="form-producto" class="form-inventario">
             <input type="text" id="prod-nombre" placeholder="Nombre del Producto" required>
             <textarea id="prod-desc" placeholder="Descripción breve" rows="2" required></textarea>
@@ -70,7 +71,6 @@
                 <input type="number" id="prod-stock" placeholder="Stock (Ej: 0)" value="0" required>
             </div>
             
-            <!-- Selector de imagen real -->
             <input type="file" id="prod-foto" accept="image/*" class="input-archivo" required>
             
             <button type="submit" id="btn-guardar-prod">Guardar Producto</button>
@@ -78,7 +78,7 @@
 
         <h3 class="subtitulo">Productos Registrados</h3>
         <div id="lista-productos" class="lista-productos">
-            <!-- Aquí irán apareciendo los productos de Firestore -->
+            <!-- Aquí irán apareciendo los productos del administrador -->
         </div>
     </div>
 
