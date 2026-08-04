@@ -2,9 +2,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+// Tus llaves maestras actualizadas y exactas
 const firebaseConfig = {
   apiKey: "AIzaSyAk9ReIO8iVHADCVEa75mREhj1T8vt6Kvc",
   authDomain: "pasion-paraguanera.firebaseapp.com",
+  databaseURL: "https://pasion-paraguanera-default-rtdb.firebaseio.com",
   projectId: "pasion-paraguanera",
   storageBucket: "pasion-paraguanera.firebasestorage.app",
   messagingSenderId: "704685201960",
@@ -15,7 +17,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// El número del dueño de la tienda
 const NUMERO_WHATSAPP = "584246669816";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -101,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
         vistaAdmin.classList.remove("oculto");
     });
 
-    formProducto.addEventListener("submit", (e) => {
+    formProducto.addEventListener("submit", async (e) => {
         e.preventDefault(); 
         btnGuardarProd.disabled = true;
         btnGuardarProd.textContent = "Guardando...";
@@ -109,7 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const urlFoto = document.getElementById("prod-foto").value;
 
-            addDoc(collection(db, "productos"), {
+            await addDoc(collection(db, "productos"), {
                 nombre: document.getElementById("prod-nombre").value,
                 descripcion: document.getElementById("prod-desc").value,
                 precio: parseFloat(document.getElementById("prod-precio").value),
@@ -161,7 +162,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 const precioNum = typeof prod.precio === 'number' ? prod.precio : parseFloat(prod.precio || 0);
                 const precioFormateado = isNaN(precioNum) ? "0.00" : precioNum.toFixed(2);
                 
-                // Tarjeta Administrador
                 const divAdmin = document.createElement("div");
                 divAdmin.classList.add("item-producto");
                 const imagenHTMLAdmin = prod.foto 
@@ -178,7 +178,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 `;
                 listaProductosDiv.appendChild(divAdmin);
 
-                // Tarjeta Cliente con Botón de WhatsApp
                 if (catalogoPublico) {
                     const divCliente = document.createElement("div");
                     divCliente.classList.add("tarjeta-producto");
