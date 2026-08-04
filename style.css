@@ -1,16 +1,17 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #121212; /* Fondo principal oscuro */
-    color: #e0e0e0; /* Texto claro para que no canse la vista */
+    background-color: #121212;
+    color: #e0e0e0;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
     margin: 0;
+    padding: 20px 0;
 }
 
 .container {
-    background: #1e1e1e; /* Color de la caja un poco más claro que el fondo */
+    background: #1e1e1e;
     padding: 2.5rem;
     border-radius: 12px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
@@ -19,7 +20,6 @@ body {
     width: 90%;
 }
 
-/* Estilos del Logo con base protectora blanca */
 .logo-tienda {
     width: 220px;
     height: auto;
@@ -27,7 +27,7 @@ body {
     user-select: none;
     -webkit-user-drag: none;
     background-color: white; 
-    border-radius: 50%; /* Mantiene el círculo perfecto */
+    border-radius: 50%;
     padding: 5px; 
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
 }
@@ -37,12 +37,20 @@ body {
 }
 
 .admin-titulo {
-    color: #90caf9; /* Azul suave para resaltar en fondo oscuro */
+    color: #90caf9;
     margin-bottom: 10px;
 }
 
+.subtitulo {
+    color: #90caf9;
+    margin-top: 25px;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
+}
+
 p {
-    color: #b0b0b0; /* Gris suave para textos secundarios */
+    color: #b0b0b0;
     margin-bottom: 20px;
 }
 
@@ -68,17 +76,12 @@ button {
     margin-bottom: 10px;
 }
 
-button:hover {
-    background-color: #c1121f;
-}
+button:hover { background-color: #c1121f; }
+button:disabled { background-color: #555; cursor: not-allowed; }
 
-.btn-secundario {
-    background-color: #4a4e69;
-}
-
-.btn-secundario:hover {
-    background-color: #22223b;
-}
+.btn-secundario { background-color: #4a4e69; }
+.btn-secundario:hover { background-color: #22223b; }
+.btn-pequeno { padding: 8px 16px; font-size: 14px; width: auto; margin-bottom: 20px; }
 
 .admin-grid {
     display: flex;
@@ -93,30 +96,35 @@ button:hover {
     padding: 15px;
     color: #f1faee;
 }
+.btn-modulo:hover { background-color: #457b9d; }
 
-.btn-modulo:hover {
-    background-color: #457b9d;
-}
+.mt-20 { margin-top: 20px; }
 
-.mt-20 {
-    margin-top: 20px;
-}
-
-/* Cajas de texto adaptadas al modo oscuro */
-input[type="email"], input[type="password"], input[type="text"] {
+/* Formularios */
+input[type="email"], input[type="password"], input[type="text"], input[type="number"], input[type="url"], textarea {
     width: 90%;
     padding: 12px;
     margin-bottom: 15px;
-    background-color: #2a2a2a; /* Fondo oscuro para el input */
-    color: #fff; /* Letras blancas al escribir */
+    background-color: #2a2a2a;
+    color: #fff;
     border: 1px solid #555;
     border-radius: 6px;
     font-size: 16px;
+    box-sizing: border-box;
+    font-family: inherit;
 }
 
-input::placeholder {
-    color: #888;
+input:disabled { background-color: #1a1a1a; color: #555; }
+input::placeholder, textarea::placeholder { color: #888; }
+textarea { resize: vertical; }
+
+.fila-inputs {
+    display: flex;
+    gap: 10px;
+    width: 90%;
+    margin: 0 auto;
 }
+.fila-inputs input { width: 100%; }
 
 .mostrar-pass-container {
     display: flex;
@@ -127,17 +135,28 @@ input::placeholder {
     font-size: 14px;
     color: #bbb;
 }
+.mostrar-pass-container input[type="checkbox"] { width: auto; margin: 0 8px 0 0; cursor: pointer; }
+.mostrar-pass-container label { cursor: pointer; }
 
-.mostrar-pass-container input[type="checkbox"] {
-    width: auto;
-    margin: 0 8px 0 0;
-    cursor: pointer;
+/* Lista de Productos */
+.lista-productos {
+    text-align: left;
+    max-height: 250px;
+    overflow-y: auto;
+    margin-top: 15px;
 }
-
-.mostrar-pass-container label {
-    cursor: pointer;
+.item-producto {
+    background-color: #2a2a2a;
+    padding: 10px 15px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    border-left: 4px solid #e63946;
 }
+.item-producto h4 { margin: 0 0 5px 0; color: #f1faee; font-size: 15px; }
+.item-producto p { margin: 0; font-size: 13px; color: #bbb; }
+.item-precio-stock { color: #81c784 !important; font-weight: bold; margin-top: 5px !important;}
 
+/* Modales */
 .modal {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -146,7 +165,6 @@ input::placeholder {
     justify-content: center;
     align-items: center;
 }
-
 .modal-contenido {
     background-color: #1e1e1e;
     padding: 30px;
@@ -155,17 +173,6 @@ input::placeholder {
     text-align: center;
     box-shadow: 0 10px 30px rgba(0,0,0,0.8);
 }
-
-.modal-contenido h2 {
-    color: #f1faee;
-}
-
-.error {
-    color: #ff6b6b; /* Rojo más brillante para alertas */
-    font-size: 14px;
-    margin-top: 10px;
-}
-
-.oculto {
-    display: none !important;
-}
+.modal-contenido h2 { color: #f1faee; }
+.error { color: #ff6b6b; font-size: 14px; margin-top: 10px; }
+.oculto { display: none !important; }
