@@ -11,7 +11,7 @@ const firebaseConfig = {
   appId: "1:704685201960:web:2caff60f1b9efdc2a0731d"
 };
 
-// === ¡TU LLAVE DE IMGBB GUARDADA! ===
+// Tu llave real de ImgBB lista para usar
 const IMGBB_API_KEY = "07dd4f0a1180673510c5047ae8b5eec8";
 
 const app = initializeApp(firebaseConfig);
@@ -40,7 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnGuardarProd = document.getElementById("btn-guardar-prod");
     const inputFoto = document.getElementById("prod-foto");
     
-    // NUEVO: Referencia a la vitrina del cliente
     const catalogoPublico = document.getElementById("catalogo-publico");
 
     chkMostrarPass.addEventListener("change", () => {
@@ -106,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
     formProducto.addEventListener("submit", async (e) => {
         e.preventDefault(); 
         btnGuardarProd.disabled = true;
-        btnGuardarProd.textContent = "Subiendo imagen...";
+        btnGuardarProd.textContent = "Subiendo imagen y guardando...";
 
         try {
             let urlFoto = "";
@@ -126,11 +125,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 if(datosImg.success) {
                     urlFoto = datosImg.data.url; 
                 } else {
-                    throw new Error("Error de ImgBB");
+                    throw new Error("Error subiendo foto a ImgBB");
                 }
             }
-
-            btnGuardarProd.textContent = "Guardando datos...";
 
             await addDoc(collection(db, "productos"), {
                 nombre: document.getElementById("prod-nombre").value,
@@ -141,36 +138,47 @@ document.addEventListener("DOMContentLoaded", () => {
                 fechaCreacion: serverTimestamp()
             });
 
+            // REPARACIÓN BLINDADA: Limpieza absoluta del formulario
             formProducto.reset(); 
             document.getElementById("prod-stock").value = "0"; 
+            inputFoto.value = ""; // Vaciamos el selector de archivo por seguridad
+            
             btnGuardarProd.disabled = false;
-            btnGuardarProd.textContent = "Guardar Producto";
+            btnGuardarProd.style.backgroundColor = "#4caf50"; // Lo ponemos verde un segundo
+            btnGuardarProd.textContent = "¡Producto Guardado!";
+            
+            setTimeout(() => {
+                btnGuardarProd.style.backgroundColor = ""; // Vuelve a su color original
+                btnGuardarProd.textContent = "Guardar Producto";
+            }, 2500);
             
         } catch (error) {
             console.error("Error al guardar: ", error);
             btnGuardarProd.disabled = false;
-            btnGuardarProd.textContent = "Error. Intenta de nuevo";
+            btnGuardarProd.textContent = "Error. Revisa tu internet";
             setTimeout(() => {
                 btnGuardarProd.textContent = "Guardar Producto";
             }, 3000);
         }
     });
 
-    // LEER PRODUCTOS Y LLENAR AMBAS VISTAS
     onSnapshot(collection(db, "productos"), (snapshot) => {
         listaProductosDiv.innerHTML = ""; 
-        catalogoPublico.innerHTML = ""; 
+        
+        // Verifica si el catálogo público existe antes de intentar llenarlo
+        if (catalogoPublico) {
+            catalogoPublico.innerHTML = ""; 
+        }
         
         if (snapshot.empty) {
             listaProductosDiv.innerHTML = "<p>No hay productos registrados aún.</p>";
-            catalogoPublico.innerHTML = "<p>El catálogo está vacío por ahora.</p>";
+            if (catalogoPublico) catalogoPublico.innerHTML = "<p>El catálogo está vacío por ahora.</p>";
             return;
         }
 
         snapshot.forEach((doc) => {
             const prod = doc.data();
             
-            // 1. Crear tarjeta para la lista del ADMINISTRADOR
             const divAdmin = document.createElement("div");
             divAdmin.classList.add("item-producto");
             const imagenHTMLAdmin = prod.foto 
@@ -187,20 +195,21 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
             listaProductosDiv.appendChild(divAdmin);
 
-            // 2. Crear tarjeta bonita para el CLIENTE PÚBLICO
-            const divCliente = document.createElement("div");
-            divCliente.classList.add("tarjeta-producto");
-            const imagenHTMLCliente = prod.foto 
-                ? `<img src="${prod.foto}" alt="${prod.nombre}">`
-                : `<div style="height: 120px; background-color: #333; border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 30px; margin-bottom: 10px;">📦</div>`;
+            if (catalogoPublico) {
+                const divCliente = document.createElement("div");
+                divCliente.classList.add("tarjeta-producto");
+                const imagenHTMLCliente = prod.foto 
+                    ? `<img src="${prod.foto}" alt="${prod.nombre}">`
+                    : `<div style="height: 120px; background-color: #333; border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 30px; margin-bottom: 10px;">📦</div>`;
 
-            divCliente.innerHTML = `
-                ${imagenHTMLCliente}
-                <h4>${prod.nombre}</h4>
-                <p class="desc">${prod.descripcion}</p>
-                <p class="precio">$${prod.precio.toFixed(2)}</p>
-            `;
-            catalogoPublico.appendChild(divCliente);
+                divCliente.innerHTML = `
+                    ${imagenHTMLCliente}
+                    <h4>${prod.nombre}</h4>
+                    <p class="desc">${prod.descripcion}</p>
+                    <p class="precio">$${prod.precio.toFixed(2)}</p>
+                `;
+                catalogoPublico.appendChild(divCliente);
+            }
         });
     });
 });
