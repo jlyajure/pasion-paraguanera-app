@@ -27,8 +27,8 @@ body {
 
 /* --- EL LOGO --- */
 .logo-tienda {
-    width: 220px;
-    height: 220px; 
+    width: 160px; /* Reducido para celulares */
+    height: 160px; /* Reducido para celulares */
     object-fit: contain;
     display: block;
     margin: 0 auto 15px auto; 
@@ -48,7 +48,7 @@ p { color: #b0b0b0; margin-bottom: 20px; }
 /* --- VITRINA DEL CLIENTE --- */
 .catalogo-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* Reducido a 140px para forzar 2 columnas en celular */
     gap: 15px;
     margin-top: 30px;
     width: 100%;
@@ -71,29 +71,28 @@ p { color: #b0b0b0; margin-bottom: 20px; }
     box-shadow: 0 6px 12px rgba(0,0,0,0.5);
 }
 
-/* OPERACIÓN COMPACTACIÓN */
 .tarjeta-producto img {
     width: 100%;
-    height: 120px; /* Reducido para no estirar la tarjeta */
+    height: 160px;
     object-fit: cover;
     border-radius: 6px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     background-color: #333;
 }
 
 .tarjeta-producto h4 { 
-    margin: 0 0 6px 0; 
+    margin: 0 0 8px 0; 
     color: #f1faee; 
-    font-size: 15px; /* Reducido ligeramente */
+    font-size: 17px; 
 }
 
 .tarjeta-producto p.desc { 
-    font-size: 12px; 
+    font-size: 13px; 
     color: #bbb; 
-    margin-bottom: 10px; 
-    line-height: 1.3;
+    margin-bottom: 15px; 
+    line-height: 1.4;
     display: -webkit-box;
-    -webkit-line-clamp: 2; /* Limitado a 2 líneas para quitar altura */
+    -webkit-line-clamp: 3; 
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -101,8 +100,8 @@ p { color: #b0b0b0; margin-bottom: 20px; }
 .tarjeta-producto p.precio { 
     color: #25D366; 
     font-weight: bold; 
-    font-size: 16px; 
-    margin: 0 0 10px 0; 
+    font-size: 18px; 
+    margin: 0 0 15px 0; 
 }
 
 /* --- BOTONES GENERALES --- */
@@ -194,7 +193,7 @@ textarea { resize: vertical; }
 /* --- LISTA DE PRODUCTOS (INVENTARIO 4 COLUMNAS) --- */
 .lista-productos { 
     display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; /* Reducido a 140px para forzar 2 columnas en celular */
     gap: 15px !important;
     max-height: 550px !important; 
     overflow-y: auto !important; 
@@ -223,7 +222,7 @@ textarea { resize: vertical; }
 
 .foto-producto-lista { 
     width: 100% !important; 
-    height: 120px !important; 
+    height: 140px !important; 
     object-fit: cover !important; 
     border-radius: 8px !important; 
     border: 1px solid #444 !important; 
@@ -359,3 +358,11 @@ textarea { resize: vertical; }
     margin-bottom: 20px; 
 }
 .total-carrito h3 { color: #fff; margin: 0; font-size: 1.5rem; text-align: right; }
+
+/* Para pantallas de escritorio más grandes el logo vuelve a ser grande */
+@media (min-width: 768px) {
+    .logo-tienda {
+        width: 220px;
+        height: 220px; 
+    }
+}
