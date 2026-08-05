@@ -50,6 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnCarritoFlotante = document.getElementById("btn-carrito-flotante");
     const modalCarrito = document.getElementById("modal-carrito");
     const btnCerrarCarrito = document.getElementById("btn-cerrar-carrito");
+    const btnVaciarCarrito = document.getElementById("btn-vaciar-carrito");
     const listaCarritoDiv = document.getElementById("lista-carrito");
     const contadorCarrito = document.getElementById("contador-carrito");
     const totalPrecioSpan = document.getElementById("total-precio");
@@ -249,6 +250,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // Cerrar ventana del carrito
     btnCerrarCarrito.addEventListener("click", () => {
         modalCarrito.classList.add("oculto");
+    });
+
+    // Vaciar Carrito (Cancelar Pedido)
+    btnVaciarCarrito.addEventListener("click", () => {
+        if (confirm("¿Estás seguro de que deseas cancelar tu pedido y vaciar el carrito?")) {
+            carrito = [];
+            actualizarInterfazCarrito();
+            modalCarrito.classList.add("oculto");
+        }
     });
 
     // Escucha clics dentro de la ventana del carrito (+, -, Basurero)
