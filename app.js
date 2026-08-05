@@ -20,6 +20,9 @@ const NUMERO_WHATSAPP = "584246669816";
 let productoEnEdicionId = null;
 let productosActuales = []; 
 
+// === ESTADO DEL CARRITO DE COMPRAS ===
+let carrito = []; // Aquí guardaremos lo que el cliente vaya pidiendo
+
 document.addEventListener("DOMContentLoaded", () => {
     const vistaCliente = document.getElementById("vista-cliente");
     const vistaAdmin = document.getElementById("vista-admin");
@@ -42,6 +45,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnGuardarProd = document.getElementById("btn-guardar-prod");
     
     const catalogoPublico = document.getElementById("catalogo-publico");
+
+    // === ELEMENTOS DEL CARRITO ===
+    const btnCarritoFlotante = document.getElementById("btn-carrito-flotante");
+    const modalCarrito = document.getElementById("modal-carrito");
+    const btnCerrarCarrito = document.getElementById("btn-cerrar-carrito");
+    const listaCarritoDiv = document.getElementById("lista-carrito");
+    const contadorCarrito = document.getElementById("contador-carrito");
+    const totalPrecioSpan = document.getElementById("total-precio");
+    const btnEnviarWhatsapp = document.getElementById("btn-enviar-whatsapp");
 
     chkMostrarPass.addEventListener("change", () => {
         passAdmin.type = chkMostrarPass.checked ? "text" : "password";
@@ -86,10 +98,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (user) {
             vistaCliente.classList.add("oculto");
             vistaAdmin.classList.remove("oculto");
+            btnCarritoFlotante.classList.add("oculto"); // Oculta el carrito al admin
         } else {
             vistaAdmin.classList.add("oculto");
             moduloInventario.classList.add("oculto"); 
             vistaCliente.classList.remove("oculto");
+            actualizarInterfazCarrito(); // Muestra el carrito si hay algo
         }
     });
 
@@ -113,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Acción para los botones de Editar y Eliminar
+    // Acción para los botones de Editar y Eliminar (Administrador)
     listaProductosDiv.addEventListener("click", async (e) => {
         if (e.target.closest(".btn-eliminar")) {
             const btn = e.target.closest(".btn-eliminar");
@@ -192,6 +206,145 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // ==========================================
+    // LÓGICA DEL CARRITO DE COMPRAS
+    // ==========================================
+
+    // Escucha clics en la vitrina pública (Agregar al Carrito)
+    catalogoPublico.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-agregar-carrito")) {
+            const btn = e.target.closest(".btn-agregar-carrito");
+            const id = btn.getAttribute("data-id");
+            const prod = productosActuales.find(p => p.id === id);
+            
+            if (prod) {
+                // Verificar si ya está en el carrito
+                const index = carrito.findIndex(item => item.id === id);
+                if (index > -1) {
+                    carrito[index].cantidad++; // Si ya está, suma 1
+                } else {
+                    carrito.push({ ...prod, cantidad: 1 }); // Si no, lo agrega
+                }
+                
+                // Efecto visual de que se agregó
+                const textoOriginal = btn.innerHTML;
+                btn.innerHTML = "¡Agregado! ✔️";
+                btn.style.backgroundColor = "#4caf50";
+                setTimeout(() => {
+                    btn.innerHTML = textoOriginal;
+                    btn.style.backgroundColor = "#25D366";
+                }, 1000);
+
+                actualizarInterfazCarrito();
+            }
+        }
+    });
+
+    // Abrir ventana del carrito
+    btnCarritoFlotante.addEventListener("click", () => {
+        renderizarListaCarrito();
+        modalCarrito.classList.remove("oculto");
+    });
+
+    // Cerrar ventana del carrito
+    btnCerrarCarrito.addEventListener("click", () => {
+        modalCarrito.classList.add("oculto");
+    });
+
+    // Escucha clics dentro de la ventana del carrito (+, -, Basurero)
+    listaCarritoDiv.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-cantidad")) {
+            const btn = e.target.closest(".btn-cantidad");
+            const id = btn.getAttribute("data-id");
+            const accion = btn.getAttribute("data-accion");
+            const index = carrito.findIndex(item => item.id === id);
+            
+            if (index > -1) {
+                if (accion === "sumar") {
+                    carrito[index].cantidad++;
+                } else if (accion === "restar") {
+                    carrito[index].cantidad--;
+                    if (carrito[index].cantidad === 0) {
+                        carrito.splice(index, 1); // Lo elimina si llega a 0
+                    }
+                }
+                actualizarInterfazCarrito();
+                renderizarListaCarrito();
+                
+                // Si el carrito quedó vacío, cierra la ventana
+                if (carrito.length === 0) {
+                    modalCarrito.classList.add("oculto");
+                }
+            }
+        }
+    });
+
+    // Enviar Pedido a WhatsApp
+    btnEnviarWhatsapp.addEventListener("click", () => {
+        if (carrito.length === 0) return;
+
+        let mensaje = "¡Hola Pasión Paraguanera! Quisiera hacer el siguiente pedido:%0A%0A";
+        let total = 0;
+
+        carrito.forEach(item => {
+            const precioNum = typeof item.precio === 'number' ? item.precio : parseFloat(item.precio || 0);
+            const subtotal = item.cantidad * precioNum;
+            total += subtotal;
+            mensaje += `🔹 ${item.cantidad}x *${item.nombre}* ($${precioNum.toFixed(2)} c/u) = $${subtotal.toFixed(2)}%0A`;
+        });
+
+        mensaje += `%0A*TOTAL A PAGAR: $${total.toFixed(2)}*%0A%0A¿Tienen disponibilidad?`;
+        
+        const enlace = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`;
+        window.open(enlace, "_blank"); // Abre WhatsApp en otra pestaña
+    });
+
+    // Funciones matemáticas del carrito
+    function actualizarInterfazCarrito() {
+        // Cuenta el total de artículos (no de productos distintos)
+        const totalArticulos = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+        contadorCarrito.textContent = totalArticulos;
+
+        // Mostrar u ocultar el botón flotante
+        if (totalArticulos > 0) {
+            btnCarritoFlotante.classList.remove("oculto");
+        } else {
+            btnCarritoFlotante.classList.add("oculto");
+        }
+    }
+
+    function renderizarListaCarrito() {
+        listaCarritoDiv.innerHTML = "";
+        let total = 0;
+
+        carrito.forEach(item => {
+            const precioNum = typeof item.precio === 'number' ? item.precio : parseFloat(item.precio || 0);
+            const subtotal = item.cantidad * precioNum;
+            total += subtotal;
+
+            const div = document.createElement("div");
+            div.classList.add("item-carrito");
+            div.innerHTML = `
+                <div class="info-item-carrito">
+                    <h4>${item.nombre}</h4>
+                    <p>$${precioNum.toFixed(2)} c/u</p>
+                </div>
+                <div class="controles-cantidad">
+                    <button class="btn-cantidad" data-id="${item.id}" data-accion="restar">-</button>
+                    <span style="color: white; font-weight: bold; width: 20px; text-align: center;">${item.cantidad}</span>
+                    <button class="btn-cantidad" data-id="${item.id}" data-accion="sumar">+</button>
+                </div>
+            `;
+            listaCarritoDiv.appendChild(div);
+        });
+
+        totalPrecioSpan.textContent = total.toFixed(2);
+    }
+
+    // ==========================================
+    // RENDERIZADO DE LOS PRODUCTOS
+    // ==========================================
+
     onSnapshot(collection(db, "productos"), (snapshot) => {
         listaProductosDiv.innerHTML = ""; 
         if (catalogoPublico) catalogoPublico.innerHTML = ""; 
@@ -223,21 +376,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 const divAdmin = document.createElement("div");
                 divAdmin.classList.add("item-producto");
                 const imagenHTMLAdmin = prod.foto 
-                    ? `<img src="${prod.foto}" class="foto-producto-lista" alt="${nombre}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;">`
-                    : `<div class="foto-producto-lista" style="width: 80px; height: 80px; background-color: #333; display: flex; justify-content: center; align-items: center; font-size: 24px; border-radius: 4px;">📦</div>`;
+                    ? `<img src="${prod.foto}" class="foto-producto-lista" alt="${nombre}">`
+                    : `<div class="foto-producto-lista" style="background-color: #333; display: flex; justify-content: center; align-items: center; font-size: 24px;">📦</div>`;
 
                 divAdmin.innerHTML = `
-                    <div style="display: flex; gap: 15px; width: 100%;">
-                        ${imagenHTMLAdmin}
-                        <div class="info-producto-lista" style="flex: 1;">
-                            <h4 style="margin: 0 0 5px 0;">${nombre}</h4>
-                            <p style="margin: 0 0 5px 0; font-size: 0.85em; color: #ccc;">${desc}</p>
-                            <p class="item-precio-stock" style="margin: 0 0 10px 0; font-weight: bold;">Precio: $${precioFormateado} | Stock: ${stock}</p>
-                            
-                            <div style="display: flex; gap: 10px;">
-                                <button class="btn-editar" data-id="${prod.id}" style="background: #ffc107; color: #000; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em; font-weight: bold;">✏️ Editar</button>
-                                <button class="btn-eliminar" data-id="${prod.id}" style="background: #f44336; color: #fff; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em; font-weight: bold;">🗑️ Eliminar</button>
-                            </div>
+                    ${imagenHTMLAdmin}
+                    <div class="info-producto-lista">
+                        <h4 title="${nombre}">${nombre}</h4>
+                        <p title="${desc}">${desc}</p>
+                        <p class="item-precio-stock">Precio: $${precioFormateado} | Stock: ${stock}</p>
+                        
+                        <div class="botones-accion">
+                            <button class="btn-editar" data-id="${prod.id}" style="background: #ffc107; color: #000;">✏️ Editar</button>
+                            <button class="btn-eliminar" data-id="${prod.id}" style="background: #f44336; color: #fff;">🗑️ Eliminar</button>
                         </div>
                     </div>
                 `;
@@ -248,33 +399,21 @@ document.addEventListener("DOMContentLoaded", () => {
                     const divCliente = document.createElement("div");
                     divCliente.classList.add("tarjeta-producto");
                     const imagenHTMLCliente = prod.foto 
-                        ? `<img src="${prod.foto}" alt="${nombre}" style="width: 100%; height: 160px; object-fit: cover; border-radius: 6px 6px 0 0;">`
-                        : `<div style="width: 100%; height: 160px; background-color: #333; border-radius: 6px 6px 0 0; display: flex; justify-content: center; align-items: center; font-size: 40px;">📦</div>`;
-
-                    const mensaje = encodeURIComponent(`Hola Pasión Paraguanera, estoy interesado en comprar el producto: ${nombre} (Precio: $${precioFormateado}). ¿Tienen disponibilidad?`);
-                    const enlaceWhatsApp = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`;
+                        ? `<img src="${prod.foto}" alt="${nombre}">`
+                        : `<div style="width: 100%; height: 160px; background-color: #333; border-radius: 6px; display: flex; justify-content: center; align-items: center; font-size: 40px; margin-bottom: 12px;">📦</div>`;
 
                     // Botón de WhatsApp Premium con SVG integrado
                     const iconoWhatsApp = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 6px; vertical-align: text-bottom;"><path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>`;
 
                     divCliente.innerHTML = `
-                        <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-                            <div>
-                                ${imagenHTMLCliente}
-                                <div style="padding: 10px;">
-                                    <h4 style="margin: 0 0 5px 0;">${nombre}</h4>
-                                    <p class="desc" style="margin: 0; font-size: 0.85em; color: #ccc;">${desc}</p>
-                                </div>
-                            </div>
-                            <div style="padding: 10px; border-top: 1px solid #333; text-align: center;">
-                                <p class="precio" style="margin: 0 0 10px 0; font-weight: bold; font-size: 1.1em; color: #4caf50;">$${precioFormateado}</p>
-                                <a href="${enlaceWhatsApp}" target="_blank" style="text-decoration: none; width: 100%; display: block;">
-                                    <button class="btn-whatsapp" style="width: 100%; background-color: #25D366; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; font-size: 1em; cursor: pointer; display: flex; justify-content: center; align-items: center;">
-                                        ${iconoWhatsApp} Comprar
-                                    </button>
-                                </a>
-                            </div>
-                        </div>
+                        ${imagenHTMLCliente}
+                        <h4 title="${nombre}">${nombre}</h4>
+                        <p class="desc" title="${desc}">${desc}</p>
+                        <p class="precio">$${precioFormateado}</p>
+                        
+                        <button class="btn-whatsapp btn-agregar-carrito" data-id="${prod.id}">
+                            ${iconoWhatsApp} Agregar al Carrito
+                        </button>
                     `;
                     catalogoPublico.appendChild(divCliente);
                 }
