@@ -1,5 +1,5 @@
 /* =========================================
-   PASIÓN PARAGUANERA - ESTILO COMPLETO Y CORREGIDO
+   PASIÓN PARAGUANERA - ESTILO CORREGIDO Y DEFINITIVO
    ========================================= */
 
 /* --- 1. RESET GENERAL Y FONDO --- */
@@ -16,23 +16,23 @@ body {
     min-height: 100vh;
 }
 
-/* --- 2. ENCABEZADO Y LOGO (CORREGIDO) --- */
+/* --- 2. ENCABEZADO Y LOGO (CORREGIDO: CENTRADO Y FONDO BLANCO) --- */
 header {
     text-align: center;
     padding: 20px;
+    width: 100%;
 }
 
-/* Aplicamos el fondo blanco directamente a la imagen para asegurar que el logo resalte */
 header img, #logo-container img {
-    background-color: #ffffff;
+    background-color: #ffffff !important;
     border-radius: 50%;
     padding: 10px;
     border: 4px solid #a64d79;
     width: 180px;
     height: 180px;
     object-fit: contain;
-    margin: 0 auto;
-    display: block;
+    margin: 0 auto; /* Esto garantiza que se centre horizontalmente */
+    display: block; /* Obligatorio para que el margen automático funcione */
     cursor: pointer;
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
 }
@@ -131,7 +131,7 @@ p {
     cursor: pointer;
 }
 
-/* --- 5. MODAL DE LOGIN (RESTAURADO Y MEJORADO) --- */
+/* --- 5. MODAL DE LOGIN (CORREGIDO: CAJAS ESTRUCTURADAS) --- */
 .oculto {
     display: none !important;
 }
@@ -149,7 +149,6 @@ p {
     z-index: 1000;
 }
 
-/* Captura el contenedor interno del modal para centrarlo y darle estilo */
 #modal-login > div {
     background-color: #222;
     padding: 35px 25px;
@@ -159,12 +158,6 @@ p {
     text-align: center;
     border: 1px solid #444;
     box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-}
-
-#modal-login h2, #modal-login h3 {
-    margin-bottom: 25px;
-    color: #fff;
-    font-size: 1.5rem;
 }
 
 #modal-login input[type="email"],
@@ -177,14 +170,11 @@ p {
     background-color: #333;
     color: #fff;
     font-size: 1rem;
+    display: block; /* Corrige el aplastamiento */
 }
 
-#modal-login input[type="checkbox"] {
-    margin-right: 8px;
-    cursor: pointer;
-}
-
-#modal-login div, #modal-login label {
+/* Estilo específico para la caja del checkbox sin dañar el resto */
+.contenedor-checkbox {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -194,9 +184,15 @@ p {
     cursor: pointer;
 }
 
+.contenedor-checkbox input {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
 #modal-login button {
-    padding: 12px 20px;
-    margin: 5px;
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -205,25 +201,15 @@ p {
     transition: background-color 0.2s;
 }
 
-#btn-entrar {
-    background-color: #4caf50;
-    color: white;
-}
+#btn-entrar { background-color: #4caf50; color: white; }
 #btn-entrar:hover { background-color: #43a047; }
 
-#btn-cerrar-modal {
-    background-color: #f44336;
-    color: white;
-}
+#btn-cerrar-modal { background-color: #f44336; color: white; }
 #btn-cerrar-modal:hover { background-color: #e53935; }
 
-#mensaje-error {
-    color: #ff6b6b;
-    margin-top: 15px;
-    font-size: 0.9rem;
-}
+#mensaje-error { color: #ff6b6b; margin-top: 15px; font-size: 0.9rem; }
 
-/* --- 6. PANEL DE CONTROL Y BOTONES DE ADMIN (RESTAURADOS) --- */
+/* --- 6. PANEL DE CONTROL Y BOTONES DE ADMIN --- */
 #vista-admin {
     padding: 30px 20px;
     max-width: 800px;
@@ -231,8 +217,7 @@ p {
     text-align: center;
 }
 
-/* Le damos estilo a todos los botones del panel sin importar su ID exacto */
-#vista-admin button, .panel-botones button {
+.panel-botones button {
     background-color: #3f51b5;
     color: white;
     border: none;
@@ -243,20 +228,18 @@ p {
     margin: 10px 5px;
     font-weight: bold;
     box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    transition: background-color 0.2s, transform 0.1s;
 }
 
-#vista-admin button:hover, .panel-botones button:hover {
-    background-color: #303f9f;
-}
-
-#vista-admin button:active, .panel-botones button:active {
-    transform: scale(0.98);
-}
-
-/* El botón de cerrar sesión siempre rojo */
-#btn-salir, button[id*="salir"], button:last-child {
+#btn-salir {
     background-color: #f44336 !important;
+    color: white;
+    border: none;
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin: 10px 5px;
+    font-weight: bold;
 }
 
 /* --- 7. FORMULARIO DE INVENTARIO Y LISTA --- */
