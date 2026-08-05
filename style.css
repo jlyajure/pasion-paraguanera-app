@@ -1,13 +1,17 @@
+/* =========================================
+   PASIÓN PARAGUANERA - ESTILO ARQUITECTO SENIOR
+   ========================================= */
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #121212;
     color: #e0e0e0;
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Evita que la página se corte arriba cuando hay mucho inventario */
+    align-items: flex-start;
     min-height: 100vh;
     margin: 0;
-    padding: 40px 0; /* Un poco más de aire en los bordes */
+    padding: 40px 0;
 }
 
 .container {
@@ -16,20 +20,23 @@ body {
     border-radius: 12px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
     text-align: center;
-    max-width: 1000px; /* AMPLIADO: De 450px a 1000px para permitir las 4 columnas */
+    max-width: 1000px; /* Tamaño perfecto para 4 columnas */
     width: 90%;
     margin: 0 auto;
 }
 
+/* --- EL LOGO --- */
 .logo-tienda {
     width: 220px;
-    height: auto;
-    margin-bottom: 15px;
+    height: 220px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto 15px auto;
     user-select: none;
     -webkit-user-drag: none;
-    background-color: white; 
+    background-color: white;
     border-radius: 50%;
-    padding: 5px; 
+    padding: 10px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
 }
 
@@ -38,165 +45,214 @@ body {
 .subtitulo { color: #90caf9; margin-top: 25px; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 10px; }
 p { color: #b0b0b0; margin-bottom: 20px; }
 
-/* Cuadrícula de la Vitrina del Cliente */
-.catalogo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 15px;
-    margin-top: 20px;
-}
-.tarjeta-producto {
-    background-color: #2a2a2a;
-    border-radius: 8px;
-    padding: 10px;
-    text-align: center;
-    border: 1px solid #444;
-    transition: transform 0.2s;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-.tarjeta-producto:hover { transform: scale(1.03); }
-.tarjeta-producto img {
-    width: 100%;
-    height: 120px;
-    object-fit: cover;
-    border-radius: 6px;
-    margin-bottom: 10px;
-}
-.tarjeta-producto h4 { margin: 0 0 5px 0; color: #f1faee; font-size: 16px; }
-.tarjeta-producto p.desc { font-size: 12px; color: #bbb; margin-bottom: 8px; line-height: 1.3; }
-.tarjeta-producto p.precio { color: #81c784; font-weight: bold; font-size: 16px; margin: 0 0 10px 0; }
-
-/* Botón de WhatsApp */
-.btn-whatsapp {
-    background-color: #25D366;
+/* --- 1. SOLUCIÓN A LOS BOTONES LARGOS (IMAGEN 1) --- */
+/* Quitamos el ancho 100% global para que los botones tengan un tamaño normal */
+button {
+    background-color: #e63946;
     color: white;
     border: none;
-    padding: 8px 12px;
+    padding: 10px 24px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: bold;
-    width: 100%;
     transition: background-color 0.3s;
+    width: auto; /* Corrección vital */
+    display: inline-block;
 }
-.btn-whatsapp:hover {
-    background-color: #1ebe57;
-}
-
-button { background-color: #e63946; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background-color 0.3s; width: 100%; margin-bottom: 10px; }
 button:hover { background-color: #c1121f; }
 button:disabled { background-color: #555; cursor: not-allowed; }
 
-.btn-secundario { background-color: #4a4e69; }
+/* Botón de WhatsApp específico */
+.btn-whatsapp {
+    background-color: #25D366;
+    width: 100%; /* Este sí debe llenar su propia tarjeta */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    margin-top: 10px;
+}
+.btn-whatsapp:hover { background-color: #1ebe57; }
+
+/* Botones secundarios (Volver al panel) */
+.btn-secundario { background-color: #4a4e69; margin-bottom: 20px; }
 .btn-secundario:hover { background-color: #22223b; }
-.btn-pequeno { padding: 8px 16px; font-size: 14px; width: auto; margin-bottom: 20px; }
 
-.admin-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-.btn-modulo { background-color: #1d3557; text-align: left; padding: 15px; color: #f1faee; }
+/* Botón de Guardar en el inventario sí debe ser ancho para resaltar */
+#form-producto button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+}
+
+/* --- 2. SOLUCIÓN AL PANEL DE ADMINISTRADOR (IMAGEN 2) --- */
+/* Los colocamos uno al lado del otro, elegantes y centrados */
+.admin-grid {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 20px;
+}
+.btn-modulo {
+    background-color: #1d3557;
+    text-align: center;
+    padding: 12px 20px;
+    width: auto;
+}
 .btn-modulo:hover { background-color: #457b9d; }
-
 .mt-20 { margin-top: 20px; }
 
-input[type="email"], input[type="password"], input[type="text"], input[type="number"], input[type="url"], textarea {
-    width: 90%; padding: 12px; margin-bottom: 15px; background-color: #2a2a2a; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 16px; box-sizing: border-box; font-family: inherit;
-}
-input::placeholder, textarea::placeholder { color: #888; }
-textarea { resize: vertical; }
-
-.fila-inputs { display: flex; gap: 10px; width: 90%; margin: 0 auto; }
-.fila-inputs input { width: 100%; }
-
-.mostrar-pass-container { display: flex; align-items: center; justify-content: flex-start; width: 90%; margin: 0 auto 15px auto; font-size: 14px; color: #bbb; }
-.mostrar-pass-container input[type="checkbox"] { width: auto; margin: 0 8px 0 0; cursor: pointer; }
-.mostrar-pass-container label { cursor: pointer; }
-
-
-/* --- INVENTARIO ADMIN: CUADRÍCULA DE 4 COLUMNAS --- */
-.lista-productos { 
+/* --- 3. SOLUCIÓN A LA VITRINA DEL CLIENTE (IMAGEN 3) --- */
+.catalogo-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Crea las columnas responsivas */
+    /* 220px garantiza que quepan exactamente 4 columnas y no se deformen como fideos */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 30px;
+    width: 100%;
+    align-items: start; /* Impide que las tarjetas se estiren verticalmente */
+}
+.tarjeta-producto {
+    background-color: #2a2a2a;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    border: 1px solid #444;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+}
+.tarjeta-producto:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+}
+.tarjeta-producto img {
+    width: 100%;
+    height: 180px; 
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    background-color: #333;
+}
+.tarjeta-producto h4 { margin: 0 0 8px 0; color: #f1faee; font-size: 16px; line-height: 1.2; }
+.tarjeta-producto p.desc {
+    font-size: 13px;
+    color: #bbb;
+    margin-bottom: 15px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.tarjeta-producto p.precio { color: #25D366; font-weight: bold; font-size: 18px; margin: 0 0 10px 0; }
+
+/* --- INVENTARIO DEL ADMIN: CUADRÍCULA DE 4 COLUMNAS --- */
+.lista-productos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 15px;
-    max-height: 500px; /* Aumentado para ver mejor los 23 productos */
-    overflow-y: auto; 
-    margin-top: 15px; 
+    max-height: 600px;
+    overflow-y: auto;
+    margin-top: 20px;
     padding-right: 5px;
     text-align: left;
 }
 
-.item-producto { 
-    background-color: #2a2a2a; 
-    padding: 15px; 
-    border-radius: 8px; 
-    border-top: 4px solid #e63946; /* Borde arriba estilo tarjeta */
+.item-producto {
+    background-color: #2a2a2a;
+    padding: 15px;
+    border-radius: 8px;
+    border-top: 4px solid #e63946;
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    display: flex; 
-    flex-direction: column;
-}
-
-/* Forzamos a apilar verticalmente los elementos que el JS ponía en fila */
-.item-producto > div {
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 10px !important;
-}
-
-.foto-producto-lista { 
-    width: 100% !important; /* Foto ocupa el ancho completo de la tarjeta */
-    height: 140px !important; 
-    object-fit: cover; 
-    border-radius: 8px; 
-    border: 1px solid #444; 
-}
-
-.info-producto-lista { 
-    flex: 1; 
-    width: 100%;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    text-align: center;
 }
 
-.info-producto-lista h4 { margin: 0 0 5px 0; color: #f1faee; font-size: 16px; }
+.foto-producto-lista {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #444;
+    margin-bottom: 10px;
+}
 
-.info-producto-lista p { 
-    margin: 0 0 5px 0; 
-    font-size: 13px; 
-    color: #bbb; 
-    line-height: 1.4; 
+.info-producto-lista {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    flex: 1;
+}
+
+.info-producto-lista h4 { margin: 0 0 5px 0; color: #f1faee; font-size: 15px; }
+
+.info-producto-lista p {
+    margin: 0 0 5px 0;
+    font-size: 12px;
+    color: #bbb;
+    line-height: 1.4;
     display: -webkit-box;
-    -webkit-line-clamp: 2; /* Corta textos largos */
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
 
-.item-precio-stock { 
-    color: #81c784 !important; 
-    font-weight: bold; 
-    margin-bottom: 10px !important; 
+.item-precio-stock {
+    color: #81c784 !important;
+    font-weight: bold;
+    margin-bottom: 15px !important;
 }
 
-/* Acomoda los botones de Editar y Eliminar perfectamente */
-.info-producto-lista div {
+/* Alineación simétrica de los botones Editar y Eliminar */
+.item-producto div {
     display: flex !important;
-    flex-direction: row !important; /* Botones uno al lado del otro */
-    gap: 8px !important;
+    flex-direction: row !important;
+    gap: 8px;
     width: 100%;
+    justify-content: space-between;
 }
 
-.info-producto-lista div button {
-    margin-bottom: 0;
+.item-producto button {
+    width: 48%; /* Mitad y mitad para cada botón */
     padding: 8px;
     font-size: 13px;
-    width: 100%;
+    margin: 0;
 }
 
+/* --- FORMULARIOS GENERALES --- */
+input[type="email"], input[type="password"], input[type="text"], input[type="number"], input[type="url"], textarea {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    background-color: #2a2a2a;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 6px;
+    font-size: 16px;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+input::placeholder, textarea::placeholder { color: #888; }
+textarea { resize: vertical; }
+
+.fila-inputs { display: flex; gap: 10px; width: 100%; margin: 0 auto; }
+.fila-inputs input { width: 100%; }
+
+.mostrar-pass-container { display: flex; align-items: center; justify-content: center; width: 100%; margin: 0 auto 15px auto; font-size: 14px; color: #bbb; }
+.mostrar-pass-container input[type="checkbox"] { width: auto; margin: 0 8px 0 0; cursor: pointer; }
+.mostrar-pass-container label { cursor: pointer; }
 
 /* --- MODAL --- */
-.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); display: flex; justify-content: center; align-items: center; }
-.modal-contenido { background-color: #1e1e1e; padding: 30px; border-radius: 10px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-.modal-contenido h2 { color: #f1faee; }
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-contenido { background-color: #1e1e1e; padding: 30px; border-radius: 10px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+.modal-contenido h2 { color: #f1faee; margin-bottom: 20px; }
 .error { color: #ff6b6b; font-size: 14px; margin-top: 10px; }
 .oculto { display: none !important; }
