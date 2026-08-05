@@ -83,16 +83,42 @@ document.addEventListener("DOMContentLoaded", () => {
         renderizarTodo(); 
     });
 
+    // SISTEMA ANTI-CUELGUES PARA FIJAR LA TASA
     document.getElementById("btn-guardar-tasa").addEventListener("click", async () => {
         const inputTasa = document.getElementById("input-tasa-bcv");
-        const nuevaTasa = parseFloat(inputTasa.value);
+        let valorTasa = inputTasa.value;
+        
+        // Convierte coma a punto automáticamente por si el usuario se equivoca
+        valorTasa = valorTasa.replace(',', '.');
+        const nuevaTasa = parseFloat(valorTasa);
+        
         if(nuevaTasa > 0) {
             const btn = document.getElementById("btn-guardar-tasa");
             btn.textContent = "Guardando...";
-            await setDoc(doc(db, "configuracion", "bcv"), { valor: nuevaTasa }, { merge: true });
-            inputTasa.value = "";
-            btn.textContent = "¡Actualizado!";
-            setTimeout(() => btn.textContent = "Fijar Tasa", 2000);
+            
+            try {
+                // Promesa principal de Firebase
+                const promesaGuardar = setDoc(doc(db, "configuracion", "bcv"), { valor: nuevaTasa }, { merge: true });
+                // Mata-procesos: Si pasan 5 segundos y Firebase no responde, lanza un error forzado
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Firebase no responde")), 5000));
+                
+                await Promise.race([promesaGuardar, timeout]);
+                
+                inputTasa.value = "";
+                btn.textContent = "¡Actualizado!";
+                setTimeout(() => btn.textContent = "Fijar Tasa", 2000);
+            } catch (error) {
+                console.error("Error al guardar la tasa:", error);
+                alert("⚠️ Error: Firebase bloqueó el guardado o el internet está fallando. Asegúrate de haber creado la colección 'configuracion' en la base de datos.");
+                btn.textContent = "Error";
+                btn.style.backgroundColor = "#f44336"; // Se pone rojo para avisar del fallo
+                setTimeout(() => {
+                    btn.textContent = "Fijar Tasa";
+                    btn.style.backgroundColor = "#25D366"; // Vuelve a su verde normal
+                }, 3000);
+            }
+        } else {
+            alert("Por favor, ingresa una tasa válida (ejemplo: 41.50)");
         }
     });
 
@@ -302,7 +328,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? `<img src="${prod.foto}" class="foto-producto-lista" alt="${nombre}">`
                 : `<div class="foto-producto-lista" style="background-color: #333; display: flex; justify-content: center; align-items: center; font-size: 24px;">📦</div>`;
 
-            // APLICAMOS LAS CLASES CLAMP-TITULO Y CLAMP-DESC
             divAdmin.innerHTML = `
                 <div style="display: flex; flex-direction: column; height: 100%; width: 100%; justify-content: space-between;">
                     <div>
@@ -346,7 +371,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     </button>`;
                 }
 
-                // APLICAMOS LAS CLASES CLAMP-TITULO Y CLAMP-DESC
                 divCliente.innerHTML = `
                     <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
                         <div>
@@ -732,7 +756,6 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const tlfLimpio = tlfCliente.replace(/\D/g, '');
 
-            // 1. Guardar factura en Pedidos
             await addDoc(collection(db, "pedidos"), {
                 cliente: nombreCliente,
                 telefono: tlfLimpio,
@@ -744,7 +767,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 fecha: serverTimestamp()
             });
 
-            // 2. AUTO-REGISTRO EN EL DIRECTORIO DE CLIENTES
             const clienteExistente = clientesActuales.find(c => c.telefono === tlfLimpio);
             if (!clienteExistente) {
                 await addDoc(collection(db, "clientes"), {
@@ -762,7 +784,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
 
-            // Limpiar Carrito
             carrito = [];
             actualizarInterfazCarrito();
             modalCarrito.classList.add("oculto");
@@ -770,7 +791,6 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("cart-telefono").value = "";
             document.getElementById("cart-direccion").value = "";
             
-            // Abrir WhatsApp
             const enlace = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`;
             window.open(enlace, "_blank"); 
 
