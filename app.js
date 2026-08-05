@@ -302,13 +302,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? `<img src="${prod.foto}" class="foto-producto-lista" alt="${nombre}">`
                 : `<div class="foto-producto-lista" style="background-color: #333; display: flex; justify-content: center; align-items: center; font-size: 24px;">📦</div>`;
 
+            // APLICAMOS LAS CLASES CLAMP-TITULO Y CLAMP-DESC
             divAdmin.innerHTML = `
                 <div style="display: flex; flex-direction: column; height: 100%; width: 100%; justify-content: space-between;">
                     <div>
                         ${imagenHTMLAdmin}
-                        <div style="text-align: center;">
-                            <h4 title="${nombre}">${nombre}</h4>
-                            <p title="${desc}">${desc}</p>
+                        <div style="text-align: center; padding: 0 5px;">
+                            <h4 title="${nombre}" class="clamp-titulo" style="color: #f1faee;">${nombre}</h4>
+                            <p title="${desc}" class="clamp-desc">${desc}</p>
                         </div>
                     </div>
                     <div style="width: 100%;">
@@ -345,13 +346,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     </button>`;
                 }
 
+                // APLICAMOS LAS CLASES CLAMP-TITULO Y CLAMP-DESC
                 divCliente.innerHTML = `
                     <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
                         <div>
                             ${imagenHTMLCliente}
                             <div style="padding: 0 10px;">
-                                <h4>${nombre}</h4>
-                                <p class="desc">${desc}</p>
+                                <h4 class="clamp-titulo" style="color: #f1faee;">${nombre}</h4>
+                                <p class="clamp-desc">${desc}</p>
                             </div>
                         </div>
                         <div style="padding: 10px; border-top: 1px solid #333; text-align: center;">
@@ -754,7 +756,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     fechaRegistro: serverTimestamp()
                 });
             } else {
-                // Si ya existe, le actualizamos la dirección por si se mudó
                 await updateDoc(doc(db, "clientes", clienteExistente.id), {
                     direccion: dirCliente,
                     nombre: nombreCliente 
