@@ -21,10 +21,10 @@ let productoEnEdicionId = null;
 let clienteEnEdicionId = null;
 let productosActuales = []; 
 let clientesActuales = [];
+let pedidosActuales = [];
 let carrito = []; 
 
-// === MOTOR BIMONETARIO ===
-let tasaBCV = 1; // Tasa por defecto
+let tasaBCV = 1;
 
 document.addEventListener("DOMContentLoaded", () => {
     const vistaCliente = document.getElementById("vista-cliente");
@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const moduloInventario = document.getElementById("modulo-inventario");
     const btnInventario = document.getElementById("btn-inventario");
-    const btnVolverAdmin = document.getElementById("btn-volver-admin");
+    const btnVolverAdminInv = document.getElementById("btn-volver-admin-inv");
     const formProducto = document.getElementById("form-producto");
     const listaProductosDiv = document.getElementById("lista-productos");
     const btnGuardarProd = document.getElementById("btn-guardar-prod");
@@ -65,6 +65,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const listaClientesDiv = document.getElementById("lista-clientes");
     const btnGuardarCli = document.getElementById("btn-guardar-cli");
 
+    // REFERENCIAS NUEVAS DE PEDIDOS
+    const moduloPedidos = document.getElementById("modulo-pedidos");
+    const btnPedidos = document.getElementById("btn-pedidos");
+    const btnVolverAdminPed = document.getElementById("btn-volver-admin-ped");
+    const listaPedidosDiv = document.getElementById("lista-pedidos");
+
     // ==========================================
     // ESCUCHADOR DE LA TASA BCV
     // ==========================================
@@ -75,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("tasa-bcv-cliente").textContent = tasaBCV.toFixed(2);
             document.getElementById("banner-bcv").classList.remove("oculto");
         }
-        renderizarTodo(); // Si cambia la tasa, re-dibuja toda la tienda con el nuevo precio
+        renderizarTodo(); 
     });
 
     document.getElementById("btn-guardar-tasa").addEventListener("click", async () => {
@@ -140,6 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
             vistaAdmin.classList.add("oculto");
             moduloInventario.classList.add("oculto"); 
             moduloClientes.classList.add("oculto"); 
+            moduloPedidos.classList.add("oculto");
             vistaCliente.classList.remove("oculto");
             actualizarInterfazCarrito(); 
         }
@@ -150,8 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
         vistaAdmin.classList.add("oculto");
         moduloInventario.classList.remove("oculto");
     });
-
-    btnVolverAdmin.addEventListener("click", () => {
+    btnVolverAdminInv.addEventListener("click", () => {
         moduloInventario.classList.add("oculto");
         vistaAdmin.classList.remove("oculto");
         if(productoEnEdicionId) {
@@ -167,7 +173,6 @@ document.addEventListener("DOMContentLoaded", () => {
         vistaAdmin.classList.add("oculto");
         moduloClientes.classList.remove("oculto");
     });
-
     btnVolverAdminCli.addEventListener("click", () => {
         moduloClientes.classList.add("oculto");
         vistaAdmin.classList.remove("oculto");
@@ -179,6 +184,16 @@ document.addEventListener("DOMContentLoaded", () => {
             btnGuardarCli.style.backgroundColor = "#4caf50";
         }
     });
+
+    btnPedidos.addEventListener("click", () => {
+        vistaAdmin.classList.add("oculto");
+        moduloPedidos.classList.remove("oculto");
+    });
+    btnVolverAdminPed.addEventListener("click", () => {
+        moduloPedidos.classList.add("oculto");
+        vistaAdmin.classList.remove("oculto");
+    });
+
 
     // ==========================================
     // LÓGICA DE INVENTARIO
@@ -257,12 +272,9 @@ document.addEventListener("DOMContentLoaded", () => {
         productosActuales = [];
         snapshot.forEach((doc) => { productosActuales.push({ id: doc.id, ...doc.data() }); });
         productosActuales.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
-        renderizarTodo(); // Dibuja la tienda con los datos frescos
+        renderizarTodo(); 
     });
 
-    // ==========================================
-    // EL GRAN RENDERIZADOR (DIBUJA TODO CON TASA BCV)
-    // ==========================================
     function renderizarTodo() {
         listaProductosDiv.innerHTML = ""; 
         if (catalogoPublico) catalogoPublico.innerHTML = ""; 
@@ -281,7 +293,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const stock = parseInt(prod.stock) || 0;
             const precioNum = typeof prod.precio === 'number' ? prod.precio : parseFloat(prod.precio || 0);
             
-            // LA MAGIA MATEMÁTICA
             const precioUSD = precioNum.toFixed(2);
             const precioVES = (precioNum * tasaBCV).toFixed(2);
             
@@ -355,7 +366,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        // Refrescar carrito por si hay una actualización de tasa mientras el cliente compra
         actualizarInterfazCarrito();
         renderizarListaCarrito();
     }
@@ -430,7 +440,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        // COBRANZA A PRUEBA DE DEVALUACIÓN
         if (e.target.closest(".btn-cobrar-cli")) {
             const id = e.target.closest(".btn-cobrar-cli").getAttribute("data-id");
             const cli = clientesActuales.find(c => c.id === id);
@@ -505,6 +514,84 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
             listaClientesDiv.appendChild(divCli);
         });
+    });
+
+    // ==========================================
+    // LÓGICA DE FACTURACIÓN Y PEDIDOS (ADMIN)
+    // ==========================================
+    onSnapshot(collection(db, "pedidos"), (snapshot) => {
+        listaPedidosDiv.innerHTML = "";
+        pedidosActuales = [];
+
+        if (snapshot.empty) {
+            listaPedidosDiv.innerHTML = "<p>Aún no hay pedidos registrados.</p>";
+            return;
+        }
+
+        snapshot.forEach((doc) => { pedidosActuales.push({ id: doc.id, ...doc.data() }); });
+        
+        // Ordenar por fecha (más recientes primero)
+        pedidosActuales.sort((a, b) => {
+            const timeA = a.fecha ? a.fecha.toMillis() : 0;
+            const timeB = b.fecha ? b.fecha.toMillis() : 0;
+            return timeB - timeA;
+        });
+
+        pedidosActuales.forEach((pedido) => {
+            const estado = pedido.estado || "Pendiente";
+            const fechaStr = pedido.fecha ? new Date(pedido.fecha.toMillis()).toLocaleString() : "Fecha desconocida";
+            
+            let colorClase = "";
+            let etiqueta = "";
+            if (estado === "Pendiente") { colorClase = ""; etiqueta = "🟡 Pendiente"; }
+            else if (estado === "Completado") { colorClase = "completado"; etiqueta = "🟢 Completado"; }
+            else if (estado === "Cancelado") { colorClase = "cancelado"; etiqueta = "🔴 Cancelado"; }
+
+            let listaItems = "";
+            if (pedido.productos && Array.isArray(pedido.productos)) {
+                pedido.productos.forEach(p => {
+                    listaItems += `<li>${p.cantidad}x ${p.nombre} ($${p.precio})</li>`;
+                });
+            }
+
+            const divPed = document.createElement("div");
+            divPed.className = `tarjeta-pedido ${colorClase}`;
+            divPed.innerHTML = `
+                <div class="pedido-header">
+                    <h4>👤 ${pedido.cliente}</h4>
+                    <span class="estado-badge">${etiqueta}</span>
+                </div>
+                <div class="pedido-cuerpo">
+                    <p>📞 WhatsApp: ${pedido.telefono}</p>
+                    <p>🕒 Fecha: ${fechaStr}</p>
+                    <ul>${listaItems}</ul>
+                    <div class="totales">Total: $${parseFloat(pedido.totalUSD).toFixed(2)} | Bs. ${parseFloat(pedido.totalVES).toFixed(2)}</div>
+                </div>
+                <div class="pedido-acciones">
+                    <button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Completado" style="background-color: #4caf50;">✔️ Listo</button>
+                    <button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Pendiente" style="background-color: #ff9800; color: #000;">🟡 Pdte</button>
+                    <button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Cancelado" style="background-color: #f44336;">❌ Canc</button>
+                    <button class="btn-eliminar-ped" data-id="${pedido.id}" style="background-color: #333;">🗑️ Borrar</button>
+                </div>
+            `;
+            listaPedidosDiv.appendChild(divPed);
+        });
+    });
+
+    listaPedidosDiv.addEventListener("click", async (e) => {
+        if (e.target.closest(".btn-estado-ped")) {
+            const btn = e.target.closest(".btn-estado-ped");
+            const id = btn.getAttribute("data-id");
+            const nuevoEstado = btn.getAttribute("data-estado");
+            await updateDoc(doc(db, "pedidos", id), { estado: nuevoEstado });
+        }
+        if (e.target.closest(".btn-eliminar-ped")) {
+            const btn = e.target.closest(".btn-eliminar-ped");
+            const id = btn.getAttribute("data-id");
+            if (confirm("¿Borrar esta factura del historial?")) {
+                await deleteDoc(doc(db, "pedidos", id));
+            }
+        }
     });
 
     // ==========================================
@@ -595,25 +682,75 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    btnEnviarWhatsapp.addEventListener("click", () => {
+    // ENVÍO DE PEDIDO Y GUARDADO DE FACTURA AUTOMÁTICA
+    btnEnviarWhatsapp.addEventListener("click", async () => {
         if (carrito.length === 0) return;
 
-        let mensaje = "¡Hola Pasión Paraguanera! Quisiera hacer el siguiente pedido:%0A%0A";
+        const nombreCliente = document.getElementById("cart-nombre").value.trim();
+        const tlfCliente = document.getElementById("cart-telefono").value.trim();
+
+        if (nombreCliente === "" || tlfCliente === "") {
+            alert("Por favor, ingresa tu Nombre y WhatsApp para procesar la factura.");
+            return;
+        }
+
+        const btn = document.getElementById("btn-enviar-whatsapp");
+        const textoOriginal = btn.innerHTML;
+        btn.innerHTML = "Procesando pedido...";
+        btn.disabled = true;
+
         let total = 0;
+        let mensaje = `¡Hola Pasión Paraguanera! Soy *${nombreCliente}*. Quisiera hacer el siguiente pedido:%0A%0A`;
+        
+        const arrayProductosFactura = [];
 
         carrito.forEach(item => {
             const precioNum = typeof item.precio === 'number' ? item.precio : parseFloat(item.precio || 0);
             const subtotal = item.cantidad * precioNum;
             total += subtotal;
             mensaje += `🔹 ${item.cantidad}x *${item.nombre}* ($${precioNum.toFixed(2)} c/u) = $${subtotal.toFixed(2)}%0A`;
+            
+            arrayProductosFactura.push({
+                id: item.id,
+                nombre: item.nombre,
+                cantidad: item.cantidad,
+                precio: precioNum.toFixed(2)
+            });
         });
 
-        // FACTURA BIMONETARIA EN WHATSAPP
         const totalBs = (total * tasaBCV).toFixed(2);
         mensaje += `%0A*TOTAL A PAGAR:*%0A💵 *$${total.toFixed(2)}*%0A🇻🇪 *Bs. ${totalBs}* (A tasa de Bs. ${tasaBCV.toFixed(2)})%0A%0A¿Tienen disponibilidad?`;
-        
-        const enlace = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`;
-        window.open(enlace, "_blank"); 
+
+        try {
+            // Guardar factura en Base de Datos (Módulo Admin)
+            await addDoc(collection(db, "pedidos"), {
+                cliente: nombreCliente,
+                telefono: tlfCliente,
+                productos: arrayProductosFactura,
+                totalUSD: total.toFixed(2),
+                totalVES: totalBs,
+                estado: "Pendiente",
+                fecha: serverTimestamp()
+            });
+
+            // Limpiar Carrito
+            carrito = [];
+            actualizarInterfazCarrito();
+            modalCarrito.classList.add("oculto");
+            document.getElementById("cart-nombre").value = "";
+            document.getElementById("cart-telefono").value = "";
+            
+            // Abrir WhatsApp
+            const enlace = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`;
+            window.open(enlace, "_blank"); 
+
+        } catch (error) {
+            console.error("Error al registrar pedido:", error);
+            alert("Ocurrió un error al procesar tu pedido. Intenta nuevamente.");
+        } finally {
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+        }
     });
 
     function actualizarInterfazCarrito() {
