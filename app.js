@@ -203,6 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // === LÓGICA DE AGREGAR AL CARRITO (CON VERIFICACIÓN DE STOCK) ===
     catalogoPublico.addEventListener("click", (e) => {
         if (e.target.closest(".btn-agregar-carrito")) {
             const btn = e.target.closest(".btn-agregar-carrito");
@@ -210,7 +211,16 @@ document.addEventListener("DOMContentLoaded", () => {
             const prod = productosActuales.find(p => p.id === id);
             
             if (prod) {
+                const stockDisponible = parseInt(prod.stock) || 0;
                 const index = carrito.findIndex(item => item.id === id);
+                let cantidadActualEnCarrito = index > -1 ? carrito[index].cantidad : 0;
+
+                // Verificamos si al agregar este producto nos pasamos del stock
+                if (cantidadActualEnCarrito >= stockDisponible) {
+                    alert(`¡Lo sentimos! Solo quedan ${stockDisponible} unidades de ${prod.nombre} en inventario.`);
+                    return; // Detiene la función, no agrega nada
+                }
+
                 if (index > -1) {
                     carrito[index].cantidad++; 
                 } else {
@@ -247,6 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // === LÓGICA DE SUMAR/RESTAR EN EL CARRITO (CON VERIFICACIÓN DE STOCK) ===
     listaCarritoDiv.addEventListener("click", (e) => {
         if (e.target.closest(".btn-cantidad")) {
             const btn = e.target.closest(".btn-cantidad");
@@ -255,8 +266,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const index = carrito.findIndex(item => item.id === id);
             
             if (index > -1) {
+                const prod = productosActuales.find(p => p.id === id);
+                const stockDisponible = prod ? parseInt(prod.stock) || 0 : 0;
+
                 if (accion === "sumar") {
-                    carrito[index].cantidad++;
+                    if (carrito[index].cantidad >= stockDisponible) {
+                        alert(`Límite alcanzado: Solo hay ${stockDisponible} unidades disponibles.`);
+                    } else {
+                        carrito[index].cantidad++;
+                    }
                 } else if (accion === "restar") {
                     carrito[index].cantidad--;
                     if (carrito[index].cantidad === 0) {
@@ -356,12 +374,11 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 const nombre = prod.nombre || "Sin nombre";
                 const desc = prod.descripcion || "";
-                const stock = prod.stock || 0;
+                const stock = parseInt(prod.stock) || 0;
                 
                 const precioNum = typeof prod.precio === 'number' ? prod.precio : parseFloat(prod.precio || 0);
                 const precioFormateado = isNaN(precioNum) ? "0.00" : precioNum.toFixed(2);
                 
-                // --- VISTA ADMINISTRADOR (INVENTARIO) ---
                 const divAdmin = document.createElement("div");
                 divAdmin.classList.add("item-producto");
                 
@@ -395,18 +412,28 @@ document.addEventListener("DOMContentLoaded", () => {
                 `;
                 listaProductosDiv.appendChild(divAdmin);
 
-                // --- VISTA CLIENTE (CATÁLOGO PÚBLICO) ---
                 if (catalogoPublico) {
                     const divCliente = document.createElement("div");
                     divCliente.classList.add("tarjeta-producto");
                     
                     const imagenHTMLCliente = prod.foto 
-                        ? `<img src="${prod.foto}" alt="${nombre}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px 6px 0 0; margin-bottom: 10px;">`
-                        : `<div style="width: 100%; height: 110px; background-color: #333; border-radius: 6px 6px 0 0; display: flex; justify-content: center; align-items: center; font-size: 40px; margin-bottom: 10px;">📦</div>`;
+                        ? `<img src="${prod.foto}" alt="${nombre}" style="width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px 6px 0 0; margin-bottom: 10px;">`
+                        : `<div style="width: 100%; height: auto; aspect-ratio: 16 / 9; background-color: #333; border-radius: 6px 6px 0 0; display: flex; justify-content: center; align-items: center; font-size: 40px; margin-bottom: 10px;">📦</div>`;
 
                     const iconoWhatsApp = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 6px; vertical-align: text-bottom;"><path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>`;
 
-                    // INYECCIÓN DIRECTA PARA LA VITRINA DEL CLIENTE
+                    // RENDERIZADO DEL BOTÓN SEGÚN EL STOCK
+                    let botonHTMLCliente = "";
+                    if (stock > 0) {
+                        botonHTMLCliente = `<button class="btn-whatsapp btn-agregar-carrito" data-id="${prod.id}" style="width: 100%; background-color: #25D366; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; margin: 0;">
+                            ${iconoWhatsApp} Agregar al Carrito
+                        </button>`;
+                    } else {
+                        botonHTMLCliente = `<button disabled style="width: 100%; background-color: #444; color: #888; border: none; padding: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; cursor: not-allowed; display: flex; justify-content: center; align-items: center; margin: 0;">
+                            🚫 Agotado
+                        </button>`;
+                    }
+
                     divCliente.innerHTML = `
                         <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
                             <div>
@@ -418,9 +445,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                             <div style="padding: 10px; border-top: 1px solid #333; text-align: center;">
                                 <p class="precio" style="margin: 0 0 10px 0; font-weight: 900; font-size: 18px; color: #00E676;">$${precioFormateado}</p>
-                                <button class="btn-whatsapp btn-agregar-carrito" data-id="${prod.id}" style="width: 100%; background-color: #25D366; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; margin: 0;">
-                                    ${iconoWhatsApp} Agregar al Carrito
-                                </button>
+                                ${botonHTMLCliente}
                             </div>
                         </div>
                     `;
