@@ -1,5 +1,5 @@
 /* =========================================
-   PASIÓN PARAGUANERA - ESTILO ARQUITECTO SENIOR
+   PASIÓN PARAGUANERA - ESTILO ARQUITECTO SENIOR (CORREGIDO)
    ========================================= */
 
 body {
@@ -20,7 +20,7 @@ body {
     border-radius: 12px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
     text-align: center;
-    max-width: 1000px; /* Tamaño perfecto para 4 columnas */
+    max-width: 1000px;
     width: 90%;
     margin: 0 auto;
 }
@@ -45,8 +45,7 @@ body {
 .subtitulo { color: #90caf9; margin-top: 25px; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 10px; }
 p { color: #b0b0b0; margin-bottom: 20px; }
 
-/* --- 1. SOLUCIÓN A LOS BOTONES LARGOS (IMAGEN 1) --- */
-/* Quitamos el ancho 100% global para que los botones tengan un tamaño normal */
+/* --- BOTONES GENERALES --- */
 button {
     background-color: #e63946;
     color: white;
@@ -57,16 +56,15 @@ button {
     font-size: 15px;
     font-weight: bold;
     transition: background-color 0.3s;
-    width: auto; /* Corrección vital */
+    width: auto;
     display: inline-block;
 }
 button:hover { background-color: #c1121f; }
 button:disabled { background-color: #555; cursor: not-allowed; }
 
-/* Botón de WhatsApp específico */
 .btn-whatsapp {
     background-color: #25D366;
-    width: 100%; /* Este sí debe llenar su propia tarjeta */
+    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -76,19 +74,12 @@ button:disabled { background-color: #555; cursor: not-allowed; }
 }
 .btn-whatsapp:hover { background-color: #1ebe57; }
 
-/* Botones secundarios (Volver al panel) */
 .btn-secundario { background-color: #4a4e69; margin-bottom: 20px; }
 .btn-secundario:hover { background-color: #22223b; }
 
-/* Botón de Guardar en el inventario sí debe ser ancho para resaltar */
-#form-producto button {
-    width: 100%;
-    padding: 14px;
-    font-size: 16px;
-}
+#form-producto button { width: 100%; padding: 14px; font-size: 16px; }
 
-/* --- 2. SOLUCIÓN AL PANEL DE ADMINISTRADOR (IMAGEN 2) --- */
-/* Los colocamos uno al lado del otro, elegantes y centrados */
+/* --- PANEL DE ADMINISTRADOR --- */
 .admin-grid {
     display: flex;
     flex-direction: row;
@@ -97,24 +88,18 @@ button:disabled { background-color: #555; cursor: not-allowed; }
     gap: 15px;
     margin-top: 20px;
 }
-.btn-modulo {
-    background-color: #1d3557;
-    text-align: center;
-    padding: 12px 20px;
-    width: auto;
-}
+.btn-modulo { background-color: #1d3557; text-align: center; padding: 12px 20px; width: auto; }
 .btn-modulo:hover { background-color: #457b9d; }
 .mt-20 { margin-top: 20px; }
 
-/* --- 3. SOLUCIÓN A LA VITRINA DEL CLIENTE (IMAGEN 3) --- */
+/* --- VITRINA DEL CLIENTE (CATÁLOGO PÚBLICO) --- */
 .catalogo-grid {
     display: grid;
-    /* 220px garantiza que quepan exactamente 4 columnas y no se deformen como fideos */
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 20px;
     margin-top: 30px;
     width: 100%;
-    align-items: start; /* Impide que las tarjetas se estiren verticalmente */
+    align-items: start;
 }
 .tarjeta-producto {
     background-color: #2a2a2a;
@@ -128,10 +113,7 @@ button:disabled { background-color: #555; cursor: not-allowed; }
     justify-content: space-between;
     height: 100%;
 }
-.tarjeta-producto:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.5);
-}
+.tarjeta-producto:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.5); }
 .tarjeta-producto img {
     width: 100%;
     height: 180px; 
@@ -153,92 +135,95 @@ button:disabled { background-color: #555; cursor: not-allowed; }
 }
 .tarjeta-producto p.precio { color: #25D366; font-weight: bold; font-size: 18px; margin: 0 0 10px 0; }
 
-/* --- INVENTARIO DEL ADMIN: CUADRÍCULA DE 4 COLUMNAS --- */
+/* ==========================================================
+   ¡BLINDAJE NUCLEAR PARA EL INVENTARIO! (SOBRESCRIBE EL JS)
+   ========================================================== */
 .lista-productos {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    max-height: 600px;
-    overflow-y: auto;
-    margin-top: 20px;
-    padding-right: 5px;
-    text-align: left;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 15px !important;
+    max-height: 600px !important;
+    overflow-y: auto !important;
+    margin-top: 20px !important;
+    padding-right: 5px !important;
+    text-align: left !important;
 }
 
 .item-producto {
-    background-color: #2a2a2a;
-    padding: 15px;
-    border-radius: 8px;
-    border-top: 4px solid #e63946;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    background-color: #2a2a2a !important;
+    padding: 15px !important;
+    border-radius: 8px !important;
+    border-top: 4px solid #e63946 !important;
+    border-left: none !important; 
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
+    height: 100% !important;
+}
+
+/* Forzamos la estructura interna a ser vertical, ignorando el "row" del JS */
+.item-producto > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 10px !important;
+    width: 100% !important;
+    height: 100% !important;
 }
 
 .foto-producto-lista {
-    width: 100%;
-    height: 140px;
-    object-fit: cover;
-    border-radius: 6px;
-    border: 1px solid #444;
-    margin-bottom: 10px;
+    width: 100% !important;
+    height: 140px !important;
+    object-fit: cover !important;
+    border-radius: 6px !important;
+    margin: 0 !important;
+    border: 1px solid #444 !important;
 }
 
 .info-producto-lista {
-    display: flex;
-    flex-direction: column;
-    text-align: center;
-    flex: 1;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    text-align: center !important;
+    width: 100% !important;
+    flex: 1 !important;
 }
 
-.info-producto-lista h4 { margin: 0 0 5px 0; color: #f1faee; font-size: 15px; }
+.info-producto-lista h4 { margin: 0 0 5px 0 !important; color: #f1faee !important; font-size: 15px !important; line-height: 1.2 !important; }
 
 .info-producto-lista p {
-    margin: 0 0 5px 0;
-    font-size: 12px;
-    color: #bbb;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    margin: 0 0 5px 0 !important;
+    font-size: 12px !important;
+    color: #bbb !important;
+    line-height: 1.4 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
 }
 
-.item-precio-stock {
-    color: #81c784 !important;
-    font-weight: bold;
-    margin-bottom: 15px !important;
-}
+.item-precio-stock { color: #81c784 !important; font-weight: bold !important; margin-bottom: 10px !important; }
 
-/* Alineación simétrica de los botones Editar y Eliminar */
-.item-producto div {
+/* Forzamos a los botones Editar/Eliminar a acomodarse perfectamente uno al lado del otro */
+.info-producto-lista > div {
     display: flex !important;
-    flex-direction: row !important;
-    gap: 8px;
-    width: 100%;
-    justify-content: space-between;
+    flex-direction: row !important; 
+    gap: 8px !important;
+    width: 100% !important;
+    justify-content: center !important;
+    margin-top: auto !important; 
 }
 
-.item-producto button {
-    width: 48%; /* Mitad y mitad para cada botón */
-    padding: 8px;
-    font-size: 13px;
-    margin: 0;
+.info-producto-lista > div button {
+    width: 48% !important;
+    padding: 8px !important;
+    font-size: 13px !important;
+    margin: 0 !important;
+    display: inline-block !important;
+    border-radius: 4px !important;
 }
 
-/* --- FORMULARIOS GENERALES --- */
+/* --- FORMULARIOS --- */
 input[type="email"], input[type="password"], input[type="text"], input[type="number"], input[type="url"], textarea {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    background-color: #2a2a2a;
-    color: #fff;
-    border: 1px solid #555;
-    border-radius: 6px;
-    font-size: 16px;
-    box-sizing: border-box;
-    font-family: inherit;
+    width: 100%; padding: 12px; margin-bottom: 15px; background-color: #2a2a2a; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 16px; box-sizing: border-box; font-family: inherit;
 }
 input::placeholder, textarea::placeholder { color: #888; }
 textarea { resize: vertical; }
