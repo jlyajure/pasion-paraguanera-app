@@ -21,7 +21,7 @@ let productoEnEdicionId = null;
 let productosActuales = []; 
 
 // === ESTADO DEL CARRITO DE COMPRAS ===
-let carrito = []; 
+let carrito = []; // Aquí guardaremos lo que el cliente vaya pidiendo
 
 document.addEventListener("DOMContentLoaded", () => {
     const vistaCliente = document.getElementById("vista-cliente");
@@ -99,12 +99,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (user) {
             vistaCliente.classList.add("oculto");
             vistaAdmin.classList.remove("oculto");
-            btnCarritoFlotante.classList.add("oculto"); 
+            btnCarritoFlotante.classList.add("oculto"); // Oculta el carrito al admin
         } else {
             vistaAdmin.classList.add("oculto");
             moduloInventario.classList.add("oculto"); 
             vistaCliente.classList.remove("oculto");
-            actualizarInterfazCarrito(); 
+            actualizarInterfazCarrito(); // Muestra el carrito si hay algo
         }
     });
 
@@ -117,6 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
         moduloInventario.classList.add("oculto");
         vistaAdmin.classList.remove("oculto");
         
+        // Resetear formulario si sale a mitad de una edición
         if(productoEnEdicionId) {
             formProducto.reset();
             document.getElementById("prod-stock").value = "0";
@@ -127,6 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Acción para los botones de Editar y Eliminar (Administrador)
     listaProductosDiv.addEventListener("click", async (e) => {
         if (e.target.closest(".btn-eliminar")) {
             const btn = e.target.closest(".btn-eliminar");
@@ -209,6 +211,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // LÓGICA DEL CARRITO DE COMPRAS
     // ==========================================
 
+    // Escucha clics en la vitrina pública (Agregar al Carrito)
     catalogoPublico.addEventListener("click", (e) => {
         if (e.target.closest(".btn-agregar-carrito")) {
             const btn = e.target.closest(".btn-agregar-carrito");
@@ -216,13 +219,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const prod = productosActuales.find(p => p.id === id);
             
             if (prod) {
+                // Verificar si ya está en el carrito
                 const index = carrito.findIndex(item => item.id === id);
                 if (index > -1) {
-                    carrito[index].cantidad++; 
+                    carrito[index].cantidad++; // Si ya está, suma 1
                 } else {
-                    carrito.push({ ...prod, cantidad: 1 }); 
+                    carrito.push({ ...prod, cantidad: 1 }); // Si no, lo agrega
                 }
                 
+                // Efecto visual de que se agregó
                 const textoOriginal = btn.innerHTML;
                 btn.innerHTML = "¡Agregado! ✔️";
                 btn.style.backgroundColor = "#4caf50";
@@ -236,15 +241,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Abrir ventana del carrito
     btnCarritoFlotante.addEventListener("click", () => {
         renderizarListaCarrito();
         modalCarrito.classList.remove("oculto");
     });
 
+    // Cerrar ventana del carrito
     btnCerrarCarrito.addEventListener("click", () => {
         modalCarrito.classList.add("oculto");
     });
 
+    // Vaciar Carrito (Cancelar Pedido)
     btnVaciarCarrito.addEventListener("click", () => {
         if (confirm("¿Estás seguro de que deseas cancelar tu pedido y vaciar el carrito?")) {
             carrito = [];
@@ -253,6 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Escucha clics dentro de la ventana del carrito (+, -, Basurero)
     listaCarritoDiv.addEventListener("click", (e) => {
         if (e.target.closest(".btn-cantidad")) {
             const btn = e.target.closest(".btn-cantidad");
@@ -266,12 +275,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else if (accion === "restar") {
                     carrito[index].cantidad--;
                     if (carrito[index].cantidad === 0) {
-                        carrito.splice(index, 1); 
+                        carrito.splice(index, 1); // Lo elimina si llega a 0
                     }
                 }
                 actualizarInterfazCarrito();
                 renderizarListaCarrito();
                 
+                // Si el carrito quedó vacío, cierra la ventana
                 if (carrito.length === 0) {
                     modalCarrito.classList.add("oculto");
                 }
@@ -279,6 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Enviar Pedido a WhatsApp
     btnEnviarWhatsapp.addEventListener("click", () => {
         if (carrito.length === 0) return;
 
@@ -295,13 +306,16 @@ document.addEventListener("DOMContentLoaded", () => {
         mensaje += `%0A*TOTAL A PAGAR: $${total.toFixed(2)}*%0A%0A¿Tienen disponibilidad?`;
         
         const enlace = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`;
-        window.open(enlace, "_blank"); 
+        window.open(enlace, "_blank"); // Abre WhatsApp en otra pestaña
     });
 
+    // Funciones matemáticas del carrito
     function actualizarInterfazCarrito() {
+        // Cuenta el total de artículos (no de productos distintos)
         const totalArticulos = carrito.reduce((sum, item) => sum + item.cantidad, 0);
         contadorCarrito.textContent = totalArticulos;
 
+        // Mostrar u ocultar el botón flotante
         if (totalArticulos > 0) {
             btnCarritoFlotante.classList.remove("oculto");
         } else {
@@ -356,6 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
             productosActuales.push({ id: doc.id, ...doc.data() });
         });
 
+        // Ordenar alfabéticamente (de la A a la Z)
         productosActuales.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
 
         productosActuales.forEach((prod) => {
@@ -394,11 +409,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     const divCliente = document.createElement("div");
                     divCliente.classList.add("tarjeta-producto");
                     
-                    // MODIFICACIÓN MAESTRA: aspect-ratio en lugar de height
+                    // MODIFICACIÓN ARQUITECTÓNICA: aspect-ratio asegurado
                     const imagenHTMLCliente = prod.foto 
                         ? `<img src="${prod.foto}" alt="${nombre}" style="width: 100%; height: auto; aspect-ratio: 4/3; object-fit: cover; border-radius: 6px 6px 0 0;">`
                         : `<div style="width: 100%; height: auto; aspect-ratio: 4/3; background-color: #333; border-radius: 6px 6px 0 0; display: flex; justify-content: center; align-items: center; font-size: 40px;">📦</div>`;
 
+                    // Botón de WhatsApp Premium con SVG integrado
                     const iconoWhatsApp = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 6px; vertical-align: text-bottom;"><path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>`;
 
                     divCliente.innerHTML = `
