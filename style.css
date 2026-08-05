@@ -71,15 +71,15 @@ p { color: #b0b0b0; margin-bottom: 20px; }
     box-shadow: 0 6px 12px rgba(0,0,0,0.5);
 }
 
-/* AQUÍ ESTÁ LA SOLUCIÓN DEL PEO DE LAS FOTOS ESTIRADAS */
+/* FORMATO PANORÁMICO (16/9) PARA BAJAR LA ALTURA */
 .tarjeta-producto img {
-    width: 100%;
-    height: auto; /* Permite que la altura se adapte */
-    aspect-ratio: 4 / 3; /* Bloquea la proporción fotográfica perfecta */
-    object-fit: cover;
-    border-radius: 6px;
-    margin-bottom: 12px;
-    background-color: #333;
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 16 / 9 !important; /* Más apaisado, menos alto */
+    object-fit: cover !important;
+    border-radius: 6px 6px 0 0 !important;
+    margin-bottom: 12px !important;
+    background-color: #333 !important;
 }
 
 .tarjeta-producto h4 { 
@@ -222,11 +222,11 @@ textarea { resize: vertical; }
     box-sizing: border-box !important;
 }
 
-/* AJUSTE TAMBIÉN PARA EL INVENTARIO */
+/* FORMATO PANORÁMICO (16/9) PARA EL INVENTARIO */
 .foto-producto-lista { 
     width: 100% !important; 
     height: auto !important; 
-    aspect-ratio: 4 / 3 !important; 
+    aspect-ratio: 16 / 9 !important; 
     object-fit: cover !important; 
     border-radius: 8px !important; 
     border: 1px solid #444 !important; 
@@ -254,10 +254,16 @@ textarea { resize: vertical; }
     overflow: hidden !important;
 }
 
+/* PRECIOS Y STOCK RESALTADOS PARA EL ADMIN */
 .item-precio-stock { 
-    color: #81c784 !important; 
-    font-weight: bold !important; 
+    color: #00E676 !important; /* Verde fluorescente para máximo contraste */
+    font-weight: 900 !important; /* Letra extra gruesa */
+    font-size: 15px !important; /* Más grande */
     margin-bottom: 10px !important; 
+    background-color: rgba(0, 230, 118, 0.1) !important; /* Caja de fondo tenue */
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    width: 100% !important;
 }
 
 .info-producto-lista .botones-accion, 
