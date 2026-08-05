@@ -266,11 +266,11 @@ textarea { resize: vertical; }
     background-color: #2a2a2a;
     border-radius: 8px;
     padding: 15px;
-    border-left: 5px solid #ff9800; /* Amarillo para Pendiente */
+    border-left: 5px solid #ff9800; 
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
-.tarjeta-pedido.completado { border-left-color: #4caf50; opacity: 0.8; } /* Verde para Completado */
-.tarjeta-pedido.cancelado { border-left-color: #f44336; opacity: 0.6; } /* Rojo para Cancelado */
+.tarjeta-pedido.completado { border-left-color: #4caf50; opacity: 0.8; } 
+.tarjeta-pedido.cancelado { border-left-color: #f44336; opacity: 0.6; } 
 
 .pedido-header {
     display: flex;
