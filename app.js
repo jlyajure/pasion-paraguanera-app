@@ -65,7 +65,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const listaClientesDiv = document.getElementById("lista-clientes");
     const btnGuardarCli = document.getElementById("btn-guardar-cli");
 
-    // REFERENCIAS NUEVAS DE PEDIDOS
     const moduloPedidos = document.getElementById("modulo-pedidos");
     const btnPedidos = document.getElementById("btn-pedidos");
     const btnVolverAdminPed = document.getElementById("btn-volver-admin-ped");
@@ -384,6 +383,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const datosCliente = {
                 nombre: document.getElementById("cli-nombre").value,
                 telefono: document.getElementById("cli-telefono").value.replace(/\D/g, ''), 
+                direccion: document.getElementById("cli-direccion").value,
                 estado: document.getElementById("cli-estado").value,
                 deuda: parseFloat(document.getElementById("cli-deuda").value) || 0,
             };
@@ -430,6 +430,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (cli) {
                 document.getElementById("cli-nombre").value = cli.nombre;
                 document.getElementById("cli-telefono").value = cli.telefono;
+                document.getElementById("cli-direccion").value = cli.direccion || "";
                 document.getElementById("cli-estado").value = cli.estado;
                 document.getElementById("cli-deuda").value = cli.deuda;
                 
@@ -469,6 +470,7 @@ document.addEventListener("DOMContentLoaded", () => {
         clientesActuales.forEach((cli) => {
             const nombre = cli.nombre || "Sin nombre";
             const telefono = cli.telefono || "Sin número";
+            const direccion = cli.direccion || "Sin dirección registrada";
             const estado = cli.estado || "Al día";
             const deudaNum = parseFloat(cli.deuda || 0);
             
@@ -499,7 +501,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div style="display: flex; flex-direction: column; height: 100%; width: 100%; justify-content: space-between;">
                     <div style="text-align: center; margin-bottom: 15px;">
                         <h4 style="margin: 0 0 5px 0; color: #f1faee; font-size: 16px;">👤 ${nombre}</h4>
-                        <p style="margin: 0 0 10px 0; font-size: 13px; color: #bbb;">📞 ${telefono}</p>
+                        <p style="margin: 0 0 5px 0; font-size: 13px; color: #bbb;">📞 ${telefono}</p>
+                        <p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">📍 ${direccion}</p>
                         ${seccionDeuda}
                     </div>
                     
@@ -530,7 +533,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         snapshot.forEach((doc) => { pedidosActuales.push({ id: doc.id, ...doc.data() }); });
         
-        // Ordenar por fecha (más recientes primero)
         pedidosActuales.sort((a, b) => {
             const timeA = a.fecha ? a.fecha.toMillis() : 0;
             const timeB = b.fecha ? b.fecha.toMillis() : 0;
@@ -540,6 +542,7 @@ document.addEventListener("DOMContentLoaded", () => {
         pedidosActuales.forEach((pedido) => {
             const estado = pedido.estado || "Pendiente";
             const fechaStr = pedido.fecha ? new Date(pedido.fecha.toMillis()).toLocaleString() : "Fecha desconocida";
+            const dirPed = pedido.direccion || "Sin dirección";
             
             let colorClase = "";
             let etiqueta = "";
@@ -563,6 +566,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <div class="pedido-cuerpo">
                     <p>📞 WhatsApp: ${pedido.telefono}</p>
+                    <p>📍 Dirección: ${dirPed}</p>
                     <p>🕒 Fecha: ${fechaStr}</p>
                     <ul>${listaItems}</ul>
                     <div class="totales">Total: $${parseFloat(pedido.totalUSD).toFixed(2)} | Bs. ${parseFloat(pedido.totalVES).toFixed(2)}</div>
@@ -682,15 +686,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ENVÍO DE PEDIDO Y GUARDADO DE FACTURA AUTOMÁTICA
+    // === EL GRAN BOTÓN DE ENVÍO Y AUTO-REGISTRO ===
     btnEnviarWhatsapp.addEventListener("click", async () => {
         if (carrito.length === 0) return;
 
         const nombreCliente = document.getElementById("cart-nombre").value.trim();
         const tlfCliente = document.getElementById("cart-telefono").value.trim();
+        const dirCliente = document.getElementById("cart-direccion").value.trim();
 
-        if (nombreCliente === "" || tlfCliente === "") {
-            alert("Por favor, ingresa tu Nombre y WhatsApp para procesar la factura.");
+        if (nombreCliente === "" || tlfCliente === "" || dirCliente === "") {
+            alert("Por favor, completa todos tus datos (Nombre, WhatsApp y Dirección) para procesar el pedido y el delivery.");
             return;
         }
 
@@ -719,13 +724,17 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         const totalBs = (total * tasaBCV).toFixed(2);
-        mensaje += `%0A*TOTAL A PAGAR:*%0A💵 *$${total.toFixed(2)}*%0A🇻🇪 *Bs. ${totalBs}* (A tasa de Bs. ${tasaBCV.toFixed(2)})%0A%0A¿Tienen disponibilidad?`;
+        mensaje += `%0A*TOTAL A PAGAR:*%0A💵 *$${total.toFixed(2)}*%0A🇻🇪 *Bs. ${totalBs}* (A tasa de Bs. ${tasaBCV.toFixed(2)})`;
+        mensaje += `%0A%0A📍 *Dirección de entrega:* ${dirCliente}%0A%0A¿Tienen disponibilidad?`;
 
         try {
-            // Guardar factura en Base de Datos (Módulo Admin)
+            const tlfLimpio = tlfCliente.replace(/\D/g, '');
+
+            // 1. Guardar factura en Pedidos
             await addDoc(collection(db, "pedidos"), {
                 cliente: nombreCliente,
-                telefono: tlfCliente,
+                telefono: tlfLimpio,
+                direccion: dirCliente,
                 productos: arrayProductosFactura,
                 totalUSD: total.toFixed(2),
                 totalVES: totalBs,
@@ -733,12 +742,32 @@ document.addEventListener("DOMContentLoaded", () => {
                 fecha: serverTimestamp()
             });
 
+            // 2. AUTO-REGISTRO EN EL DIRECTORIO DE CLIENTES
+            const clienteExistente = clientesActuales.find(c => c.telefono === tlfLimpio);
+            if (!clienteExistente) {
+                await addDoc(collection(db, "clientes"), {
+                    nombre: nombreCliente,
+                    telefono: tlfLimpio,
+                    direccion: dirCliente,
+                    estado: "Al día",
+                    deuda: 0,
+                    fechaRegistro: serverTimestamp()
+                });
+            } else {
+                // Si ya existe, le actualizamos la dirección por si se mudó
+                await updateDoc(doc(db, "clientes", clienteExistente.id), {
+                    direccion: dirCliente,
+                    nombre: nombreCliente 
+                });
+            }
+
             // Limpiar Carrito
             carrito = [];
             actualizarInterfazCarrito();
             modalCarrito.classList.add("oculto");
             document.getElementById("cart-nombre").value = "";
             document.getElementById("cart-telefono").value = "";
+            document.getElementById("cart-direccion").value = "";
             
             // Abrir WhatsApp
             const enlace = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`;
