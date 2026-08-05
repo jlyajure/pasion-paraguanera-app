@@ -27,7 +27,8 @@
     <link rel="apple-touch-icon" href="logo.png">
     <meta name="theme-color" content="#121212">
 
-    <link rel="stylesheet" href="style.css">
+    <!-- Rompecaché también en el CSS -->
+    <link rel="stylesheet" href="style.css?v=rompecache">
 </head>
 <body>
     <!-- VISTA DEL CLIENTE (Pública) -->
@@ -124,6 +125,7 @@
         </div>
     </div>
 
-    <script type="module" src="app.js"></script>
+    <!-- EL TRUCO ESTÁ AQUÍ: Le decimos al navegador que es una versión "nueva" -->
+    <script type="module" src="app.js?v=rompecache"></script>
 </body>
 </html>
