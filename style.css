@@ -73,7 +73,8 @@ p { color: #b0b0b0; margin-bottom: 20px; }
 
 .tarjeta-producto img {
     width: 100%;
-    height: 130px; /* CORREGIDO: Reducido para quitar el estiramiento vertical */
+    /* CORRECCIÓN ARQUITECTÓNICA: Altura reducida a 110px para evitar el efecto alargado vertical */
+    height: 110px; 
     object-fit: cover;
     border-radius: 6px;
     margin-bottom: 12px;
@@ -222,7 +223,8 @@ textarea { resize: vertical; }
 
 .foto-producto-lista { 
     width: 100% !important; 
-    height: 140px !important; 
+    /* También lo reducimos aquí para que sea armónico con la vitrina pública */
+    height: 120px !important; 
     object-fit: cover !important; 
     border-radius: 8px !important; 
     border: 1px solid #444 !important; 
