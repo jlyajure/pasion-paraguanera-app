@@ -5,18 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pasión Paraguanera</title>
     
-    <!-- METADATOS PREMIUM (SEO Y REDES SOCIALES) -->
     <meta name="description" content="Descubre los mejores productos locales. Visita el catálogo oficial de Pasión Paraguanera.">
     <meta name="keywords" content="Pasión Paraguanera, tienda online, catálogo, Punto Fijo, Falcón">
     
-    <!-- Open Graph (WhatsApp, Facebook, LinkedIn) -->
     <meta property="og:title" content="Catálogo Oficial | Pasión Paraguanera">
     <meta property="og:description" content="Explora nuestra variedad de productos y haz tu pedido directamente por WhatsApp.">
     <meta property="og:image" content="https://pasion-paraguanera-app.vercel.app/logo.png">
     <meta property="og:url" content="https://pasion-paraguanera-app.vercel.app/">
     <meta property="og:type" content="website">
 
-    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Catálogo Oficial | Pasión Paraguanera">
     <meta name="twitter:description" content="Explora nuestra variedad de productos y haz tu pedido directamente por WhatsApp.">
@@ -27,36 +24,33 @@
     <link rel="apple-touch-icon" href="logo.png">
     <meta name="theme-color" content="#121212">
 
-    <!-- Rompecaché también en el CSS -->
-    <link rel="stylesheet" href="style.css?v=rompecache">
+    <link rel="stylesheet" href="style.css?v=bimonetario">
 </head>
 <body>
-    <!-- VISTA DEL CLIENTE (Pública) -->
     <div id="vista-cliente" class="container">
         <img src="logo.png" alt="Logo Pasión Paraguanera" id="titulo-secreto" class="logo-tienda">
+        <p style="margin-bottom: 10px;">Catálogo Oficial</p>
         
-        <p>Catálogo Oficial</p>
-        
-        <!-- VITRINA PÚBLICA DE PRODUCTOS -->
-        <div id="catalogo-publico" class="catalogo-grid">
-            <!-- Los productos de Firestore aparecerán aquí automáticamente -->
+        <!-- BANNER DE TASA BCV PARA EL CLIENTE -->
+        <div id="banner-bcv" class="oculto" style="background-color: #1a1a1a; display: inline-block; padding: 6px 15px; border-radius: 20px; font-size: 13px; color: #81c784; border: 1px solid #333;">
+            💵 Tasa del Día: <strong>Bs. <span id="tasa-bcv-cliente">0.00</span></strong>
         </div>
+
+        <div id="catalogo-publico" class="catalogo-grid"></div>
     </div>
 
-    <!-- BOTÓN FLOTANTE DEL CARRITO -->
     <div id="btn-carrito-flotante" class="oculto">
         🛒 <span id="contador-carrito">0</span>
     </div>
 
-    <!-- MODAL DEL CARRITO DE COMPRAS -->
     <div id="modal-carrito" class="modal oculto">
         <div class="modal-contenido carrito-contenido">
             <h2>Tu Pedido</h2>
-            <div id="lista-carrito">
-                <!-- Aquí aparecerán los productos seleccionados por el cliente -->
-            </div>
+            <div id="lista-carrito"></div>
             <div class="total-carrito">
-                <h3>Total: $<span id="total-precio">0.00</span></h3>
+                <!-- TOTAL BIMONETARIO -->
+                <h3 style="margin-bottom: 5px;">Total: $<span id="total-precio">0.00</span></h3>
+                <h4 style="margin: 0; color: #81c784; font-size: 1.1rem;">Bs. <span id="total-precio-bs">0.00</span></h4>
             </div>
             <button id="btn-enviar-whatsapp" class="btn-whatsapp" style="margin-bottom: 10px;">Enviar Pedido por WhatsApp</button>
             <div style="display: flex; gap: 10px;">
@@ -66,7 +60,6 @@
         </div>
     </div>
 
-    <!-- MODAL DE LOGIN OCULTO -->
     <div id="modal-login" class="modal oculto">
         <div class="modal-contenido">
             <h2>Acceso Propietario</h2>
@@ -84,48 +77,69 @@
         </div>
     </div>
 
-    <!-- VISTA DEL ADMINISTRADOR (Privada) -->
     <div id="vista-admin" class="container oculto">
         <h1 class="admin-titulo">Panel de Control</h1>
-        <p>Gestión interna de Pasión Paraguanera.</p>
+        <p style="margin-bottom: 10px;">Gestión interna de Pasión Paraguanera.</p>
+        
+        <!-- TARJETA CONTROLADORA BCV DEL ADMINISTRADOR -->
+        <div class="tarjeta-bcv">
+            <h3>💵 Tasa BCV del Día</h3>
+            <p>Tasa actual en el sistema: <strong style="color: #00E676; font-size: 1.2rem;">Bs. <span id="tasa-actual-admin">0.00</span></strong></p>
+            <div class="fila-inputs" style="max-width: 300px; margin: 0 auto;">
+                <input type="number" id="input-tasa-bcv" placeholder="Ej: 41.50" step="0.01" style="margin-bottom: 0;">
+                <button id="btn-guardar-tasa" style="background-color: #25D366; width: auto; margin-bottom: 0;">Fijar Tasa</button>
+            </div>
+        </div>
         
         <div class="admin-grid">
             <button id="btn-inventario" class="btn-modulo">📦 Control de Inventario</button>
-            <button class="btn-modulo">👥 Gestión de Clientes</button>
-            <button class="btn-modulo">📄 Facturación y Pedidos</button>
+            <button id="btn-clientes" class="btn-modulo">👥 Gestión de Clientes</button>
+            <button class="btn-modulo" disabled style="opacity: 0.5;">📄 Facturación y Pedidos</button>
         </div>
         
         <button id="btn-salir" class="btn-secundario mt-20">Cerrar Sesión</button>
     </div>
 
-    <!-- MÓDULO DE INVENTARIO -->
     <div id="modulo-inventario" class="container oculto">
         <button id="btn-volver-admin" class="btn-secundario btn-pequeno">⬅ Volver al Panel</button>
         <h2 class="admin-titulo">📦 Inventario</h2>
         
-        <!-- Formulario -->
         <form id="form-producto" class="form-inventario">
             <input type="text" id="prod-nombre" placeholder="Nombre del Producto" required>
             <textarea id="prod-desc" placeholder="Descripción breve" rows="2" required></textarea>
-            
             <div class="fila-inputs">
                 <input type="number" id="prod-precio" placeholder="Precio ($)" step="0.01" required>
                 <input type="number" id="prod-stock" placeholder="Stock (Ej: 0)" value="0" required>
             </div>
-            
-            <!-- Enlace directo de la imagen -->
             <input type="url" id="prod-foto" placeholder="Pega aquí el enlace de la imagen" required>
-            
             <button type="submit" id="btn-guardar-prod">Guardar Producto</button>
         </form>
 
         <h3 class="subtitulo">Productos Registrados</h3>
-        <div id="lista-productos" class="lista-productos">
-            <!-- Aquí irán apareciendo los productos del administrador -->
-        </div>
+        <div id="lista-productos" class="lista-productos"></div>
     </div>
 
-    <!-- EL TRUCO ESTÁ AQUÍ: Le decimos al navegador que es una versión "nueva" -->
-    <script type="module" src="app.js?v=rompecache"></script>
+    <div id="modulo-clientes" class="container oculto">
+        <button id="btn-volver-admin-cli" class="btn-secundario btn-pequeno">⬅ Volver al Panel</button>
+        <h2 class="admin-titulo">👥 Gestión de Clientes</h2>
+        
+        <form id="form-cliente" class="form-inventario">
+            <input type="text" id="cli-nombre" placeholder="Nombre y Apellido" required>
+            <input type="text" id="cli-telefono" placeholder="WhatsApp (Ej: 584246669816)" required>
+            <div class="fila-inputs">
+                <select id="cli-estado" required>
+                    <option value="Al día">🟢 Al día (Sin deudas)</option>
+                    <option value="Con Deuda">🔴 Con Deuda / Fiado</option>
+                </select>
+                <input type="number" id="cli-deuda" placeholder="Monto deuda ($)" value="0" step="0.01">
+            </div>
+            <button type="submit" id="btn-guardar-cli" style="background-color: #4caf50;">Registrar Cliente</button>
+        </form>
+
+        <h3 class="subtitulo">Directorio de Clientes</h3>
+        <div id="lista-clientes" class="lista-productos"></div>
+    </div>
+
+    <script type="module" src="app.js?v=bimonetario"></script>
 </body>
 </html>
