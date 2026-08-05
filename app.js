@@ -25,9 +25,20 @@ let pedidosActuales = [];
 let carrito = []; 
 let tasaBCV = 1;
 
-// Controladores para apagar/encender la base de datos según si es dueño o cliente
 let unsubClientes = null;
 let unsubPedidos = null;
+
+// Función para asegurar que el número empiece con 58 para WhatsApp
+function formatearTelefono(tlf) {
+    let limpio = tlf.replace(/\D/g, '');
+    if (limpio.startsWith('0')) {
+        return '58' + limpio.substring(1);
+    }
+    if (limpio.length === 10 && !limpio.startsWith('58')) {
+        return '58' + limpio;
+    }
+    return limpio;
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     const vistaCliente = document.getElementById("vista-cliente");
@@ -73,21 +84,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnVolverAdminPed = document.getElementById("btn-volver-admin-ped");
     const listaPedidosDiv = document.getElementById("lista-pedidos");
 
-    // ==========================================
-    // MEMORIA LOCAL DEL CLIENTE (NUEVO)
-    // ==========================================
     const cartNombreInput = document.getElementById("cart-nombre");
     const cartTelefonoInput = document.getElementById("cart-telefono");
     const cartDireccionInput = document.getElementById("cart-direccion");
 
-    // Cargar datos guardados si existen en el celular del cliente
     cartNombreInput.value = localStorage.getItem("pp_nombre") || "";
     cartTelefonoInput.value = localStorage.getItem("pp_telefono") || "";
     cartDireccionInput.value = localStorage.getItem("pp_direccion") || "";
 
-    // ==========================================
-    // ESCUCHADOR DE LA TASA BCV (PÚBLICO)
-    // ==========================================
     onSnapshot(doc(db, "configuracion", "bcv"), (docSnap) => {
         if (docSnap.exists()) {
             tasaBCV = parseFloat(docSnap.data().valor) || 1;
@@ -118,9 +122,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ==========================================
-    // SISTEMA DE SEGURIDAD Y LOGIN
-    // ==========================================
     chkMostrarPass.addEventListener("change", () => { passAdmin.type = chkMostrarPass.checked ? "text" : "password"; });
 
     let contadorClics = 0; let tiempoClic;
@@ -183,7 +184,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // NAVEGACIÓN PANEL ADMINISTRADOR
     btnInventario.addEventListener("click", () => { vistaAdmin.classList.add("oculto"); moduloInventario.classList.remove("oculto"); });
     btnVolverAdminInv.addEventListener("click", () => {
         moduloInventario.classList.add("oculto"); vistaAdmin.classList.remove("oculto");
@@ -199,9 +199,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btnPedidos.addEventListener("click", () => { vistaAdmin.classList.add("oculto"); moduloPedidos.classList.remove("oculto"); });
     btnVolverAdminPed.addEventListener("click", () => { moduloPedidos.classList.add("oculto"); vistaAdmin.classList.remove("oculto"); });
 
-    // ==========================================
-    // LÓGICA DE INVENTARIO
-    // ==========================================
     formProducto.addEventListener("submit", async (e) => {
         e.preventDefault(); btnGuardarProd.disabled = true; const textoOriginal = btnGuardarProd.textContent; btnGuardarProd.textContent = "Procesando...";
         try {
@@ -252,7 +249,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const stock = parseInt(prod.stock) || 0; const precioNum = typeof prod.precio === 'number' ? prod.precio : parseFloat(prod.precio || 0);
             const precioUSD = precioNum.toFixed(2); const precioVES = (precioNum * tasaBCV).toFixed(2);
             
-            // ADMIN VIEW
             const divAdmin = document.createElement("div"); divAdmin.classList.add("item-producto");
             const imagenHTMLAdmin = prod.foto ? `<img src="${prod.foto}" class="foto-producto-lista" alt="${nombre}">` : `<div class="foto-producto-lista" style="background-color: #333; display: flex; justify-content: center; align-items: center; font-size: 24px;">📦</div>`;
 
@@ -264,7 +260,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>`;
             listaProductosDiv.appendChild(divAdmin);
 
-            // CLIENT VIEW
             if (catalogoPublico) {
                 const divCliente = document.createElement("div"); divCliente.classList.add("tarjeta-producto");
                 const imagenHTMLCliente = prod.foto ? `<img src="${prod.foto}" alt="${nombre}">` : `<div style="width: 100%; height: 110px; background-color: #333; border-radius: 6px 6px 0 0; display: flex; justify-content: center; align-items: center; font-size: 40px; margin-bottom: 10px;">📦</div>`;
@@ -283,13 +278,12 @@ document.addEventListener("DOMContentLoaded", () => {
         actualizarInterfazCarrito(); renderizarListaCarrito();
     }
 
-    // ==========================================
-    // LÓGICA DE CLIENTES (DIRECTORIO Y COBROS) - ADMIN
-    // ==========================================
     formCliente.addEventListener("submit", async (e) => {
         e.preventDefault(); btnGuardarCli.disabled = true; const textoOriginal = btnGuardarCli.textContent; btnGuardarCli.textContent = "Guardando...";
         try {
-            const tlf = document.getElementById("cli-telefono").value.replace(/\D/g, '');
+            // Formateamos el teléfono antes de guardar en la DB
+            const tlf = formatearTelefono(document.getElementById("cli-telefono").value);
+            
             const datosCliente = {
                 nombre: document.getElementById("cli-nombre").value, telefono: tlf, direccion: document.getElementById("cli-direccion").value,
                 estado: document.getElementById("cli-estado").value, deuda: parseFloat(document.getElementById("cli-deuda").value) || 0,
@@ -315,9 +309,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.target.closest(".btn-cobrar-cli")) {
             const cli = clientesActuales.find(c => c.id === e.target.closest(".btn-cobrar-cli").getAttribute("data-id"));
             if (cli && cli.telefono) {
+                // Preparamos el link asegurando que tenga formato de WhatsApp
+                const tlfLink = formatearTelefono(cli.telefono);
+                
                 const montoUSD = parseFloat(cli.deuda || 0).toFixed(2); const montoVES = (parseFloat(cli.deuda || 0) * tasaBCV).toFixed(2);
                 const mensaje = `Hola ${cli.nombre}, te saludamos de Pasión Paraguanera. Te escribimos para recordarte amablemente que tienes un saldo pendiente por cancelar de *$${montoUSD}* (Equivalente a *Bs. ${montoVES}* a la tasa de hoy). ¡Agradecemos tu pronta atención!`;
-                window.open(`https://wa.me/${cli.telefono}?text=${mensaje}`, "_blank");
+                window.open(`https://wa.me/${tlfLink}?text=${mensaje}`, "_blank");
             }
         }
     });
@@ -336,9 +333,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ==========================================
-    // LÓGICA DE FACTURACIÓN Y PEDIDOS (ADMIN)
-    // ==========================================
     listaPedidosDiv.addEventListener("click", async (e) => {
         if (e.target.closest(".btn-estado-ped")) { await updateDoc(doc(db, "pedidos", e.target.closest(".btn-estado-ped").getAttribute("data-id")), { estado: e.target.closest(".btn-estado-ped").getAttribute("data-estado") }); }
         if (e.target.closest(".btn-eliminar-ped")) { if (confirm("¿Borrar esta factura del historial?")) { await deleteDoc(doc(db, "pedidos", e.target.closest(".btn-eliminar-ped").getAttribute("data-id"))); } }
@@ -357,9 +351,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ==========================================
-    // LÓGICA DEL CARRITO PÚBLICO Y CHECKOUT
-    // ==========================================
     catalogoPublico.addEventListener("click", (e) => {
         if (e.target.closest(".btn-agregar-carrito")) {
             const btn = e.target.closest(".btn-agregar-carrito"); const id = btn.getAttribute("data-id"); const prod = productosActuales.find(p => p.id === id);
@@ -388,7 +379,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // === EL GRAN BOTÓN DE ENVÍO, AUTO-REGISTRO Y DESCUENTO DE STOCK ===
     btnEnviarWhatsapp.addEventListener("click", async () => {
         if (carrito.length === 0) return;
         const nombreCliente = cartNombreInput.value.trim();
@@ -413,31 +403,26 @@ document.addEventListener("DOMContentLoaded", () => {
         mensaje += `%0A*TOTAL A PAGAR:*%0A💵 *$${total.toFixed(2)}*%0A🇻🇪 *Bs. ${totalBs}* (A tasa de Bs. ${tasaBCV.toFixed(2)})%0A%0A📍 *Dirección de entrega:* ${dirCliente}%0A%0A¿Tienen disponibilidad?`;
 
         try {
-            const tlfLimpio = tlfCliente.replace(/\D/g, '');
+            const tlfLimpio = formatearTelefono(tlfCliente);
 
-            // GUARDAMOS LOS DATOS EN EL TELÉFONO DEL CLIENTE PARA LA PRÓXIMA VEZ
             localStorage.setItem("pp_nombre", nombreCliente);
             localStorage.setItem("pp_telefono", tlfLimpio);
             localStorage.setItem("pp_direccion", dirCliente);
 
-            // 1. Guardar factura en Pedidos
             await addDoc(collection(db, "pedidos"), {
                 cliente: nombreCliente, telefono: tlfLimpio, direccion: dirCliente, productos: arrayProductosFactura,
                 totalUSD: total.toFixed(2), totalVES: totalBs, estado: "Pendiente", fecha: serverTimestamp()
             });
 
-            // 2. AUTO-REGISTRO INTELIGENTE EN EL DIRECTORIO
             await setDoc(doc(db, "clientes", tlfLimpio), {
                 nombre: nombreCliente, telefono: tlfLimpio, direccion: dirCliente, fechaUltimoPedido: serverTimestamp()
             }, { merge: true });
 
-            // 3. DESCONTAR EL INVENTARIO AUTOMÁTICAMENTE 
             for (const item of carrito) {
                 const productoRef = doc(db, "productos", item.id);
                 await updateDoc(productoRef, { stock: increment(-item.cantidad) });
             }
 
-            // Vaciamos el carrito pero dejamos los datos personales ahí escritos
             carrito = []; actualizarInterfazCarrito(); modalCarrito.classList.add("oculto");
             
             window.open(`https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`, "_blank"); 
