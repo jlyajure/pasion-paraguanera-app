@@ -24,7 +24,7 @@
     <link rel="apple-touch-icon" href="logo.png">
     <meta name="theme-color" content="#121212">
 
-    <link rel="stylesheet" href="style.css?v=facturacion">
+    <link rel="stylesheet" href="style.css?v=delivery">
 </head>
 <body>
     <!-- VISTA CLIENTE -->
@@ -55,11 +55,12 @@
                 <h4 style="margin: 0; color: #81c784; font-size: 1.1rem;">Bs. <span id="total-precio-bs">0.00</span></h4>
             </div>
 
-            <!-- NUEVOS DATOS DEL CLIENTE PARA LA FACTURA -->
+            <!-- DATOS DEL CLIENTE (AHORA CON DIRECCIÓN) -->
             <div style="text-align: left; margin-bottom: 15px;">
-                <label style="font-size: 13px; color: #bbb;">Tus datos para la factura:</label>
+                <label style="font-size: 13px; color: #bbb;">Datos para Factura y Delivery:</label>
                 <input type="text" id="cart-nombre" placeholder="Nombre y Apellido" required style="width: 100%; margin-top: 5px; padding: 10px; border-radius: 5px; border: 1px solid #555; background: #2a2a2a; color: white; box-sizing: border-box;">
                 <input type="number" id="cart-telefono" placeholder="WhatsApp (Ej: 04246669816)" required style="width: 100%; margin-top: 8px; padding: 10px; border-radius: 5px; border: 1px solid #555; background: #2a2a2a; color: white; box-sizing: border-box;">
+                <input type="text" id="cart-direccion" placeholder="Dirección (Ej: Punta Cardón, Sector...)" required style="width: 100%; margin-top: 8px; padding: 10px; border-radius: 5px; border: 1px solid #555; background: #2a2a2a; color: white; box-sizing: border-box;">
             </div>
 
             <button id="btn-enviar-whatsapp" class="btn-whatsapp" style="margin-bottom: 10px;">Confirmar y Enviar por WhatsApp</button>
@@ -137,6 +138,7 @@
         <form id="form-cliente" class="form-inventario">
             <input type="text" id="cli-nombre" placeholder="Nombre y Apellido" required>
             <input type="text" id="cli-telefono" placeholder="WhatsApp (Ej: 584246669816)" required>
+            <input type="text" id="cli-direccion" placeholder="Dirección exacta para Delivery" required>
             <div class="fila-inputs">
                 <select id="cli-estado" required>
                     <option value="Al día">🟢 Al día (Sin deudas)</option>
@@ -151,7 +153,7 @@
         <div id="lista-clientes" class="lista-productos"></div>
     </div>
 
-    <!-- MÓDULO: FACTURACIÓN Y PEDIDOS (NUEVO) -->
+    <!-- MÓDULO: FACTURACIÓN Y PEDIDOS -->
     <div id="modulo-pedidos" class="container oculto">
         <button id="btn-volver-admin-ped" class="btn-secundario btn-pequeno">⬅ Volver al Panel</button>
         <h2 class="admin-titulo">📄 Facturación y Pedidos</h2>
@@ -160,6 +162,6 @@
         <div id="lista-pedidos" class="lista-pedidos-grid"></div>
     </div>
 
-    <script type="module" src="app.js?v=facturacion"></script>
+    <script type="module" src="app.js?v=delivery"></script>
 </body>
 </html>
