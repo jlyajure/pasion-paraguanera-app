@@ -1,5 +1,5 @@
 /* =========================================
-   PASIÓN PARAGUANERA - ESTILO ARQUITECTO SENIOR (CORREGIDO)
+   PASIÓN PARAGUANERA - ESTILO CORREGIDO Y DEFINITIVO
    ========================================= */
 
 body {
@@ -8,7 +8,7 @@ body {
     color: #e0e0e0;
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: flex-start; /* Evita que el contenedor se aplaste verticalmente */
     min-height: 100vh;
     margin: 0;
     padding: 40px 0;
@@ -20,23 +20,23 @@ body {
     border-radius: 12px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
     text-align: center;
-    max-width: 1000px;
+    max-width: 1000px; /* Permite que la vitrina crezca a los lados en la PC */
     width: 90%;
-    margin: 0 auto;
+    margin: 0 auto; /* Asegura el centrado absoluto */
 }
 
-/* --- EL LOGO --- */
+/* --- EL LOGO (CENTRADO ABSOLUTO Y BLANCO) --- */
 .logo-tienda {
     width: 220px;
-    height: 220px;
+    height: 220px; /* Obliga a que sea un círculo perfecto */
     object-fit: contain;
     display: block;
-    margin: 0 auto 15px auto;
+    margin: 0 auto 15px auto; /* Centrado automático forzado a la izquierda y derecha */
     user-select: none;
     -webkit-user-drag: none;
-    background-color: white;
+    background-color: white; 
     border-radius: 50%;
-    padding: 10px;
+    padding: 10px; 
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
 }
 
@@ -45,185 +45,136 @@ body {
 .subtitulo { color: #90caf9; margin-top: 25px; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 10px; }
 p { color: #b0b0b0; margin-bottom: 20px; }
 
-/* --- BOTONES GENERALES --- */
-button {
-    background-color: #e63946;
-    color: white;
-    border: none;
-    padding: 10px 24px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 15px;
-    font-weight: bold;
-    transition: background-color 0.3s;
-    width: auto;
-    display: inline-block;
-}
-button:hover { background-color: #c1121f; }
-button:disabled { background-color: #555; cursor: not-allowed; }
-
-.btn-whatsapp {
-    background-color: #25D366;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    padding: 10px;
-    margin-top: 10px;
-}
-.btn-whatsapp:hover { background-color: #1ebe57; }
-
-.btn-secundario { background-color: #4a4e69; margin-bottom: 20px; }
-.btn-secundario:hover { background-color: #22223b; }
-
-#form-producto button { width: 100%; padding: 14px; font-size: 16px; }
-
-/* --- PANEL DE ADMINISTRADOR --- */
-.admin-grid {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-top: 20px;
-}
-.btn-modulo { background-color: #1d3557; text-align: center; padding: 12px 20px; width: auto; }
-.btn-modulo:hover { background-color: #457b9d; }
-.mt-20 { margin-top: 20px; }
-
-/* --- VITRINA DEL CLIENTE (CATÁLOGO PÚBLICO) --- */
+/* --- CUADRÍCULA DE LA VITRINA DEL CLIENTE --- */
 .catalogo-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* Responsivo: 2 columnas en celular, hasta 4 o 5 en PC */
     gap: 20px;
     margin-top: 30px;
     width: 100%;
-    align-items: start;
 }
+
 .tarjeta-producto {
     background-color: #2a2a2a;
     border-radius: 10px;
-    padding: 15px;
+    padding: 12px;
     text-align: center;
     border: 1px solid #444;
     transition: transform 0.2s, box-shadow 0.2s;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    height: 100%;
 }
-.tarjeta-producto:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.5); }
+
+.tarjeta-producto:hover { 
+    transform: translateY(-5px); 
+    box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+}
+
 .tarjeta-producto img {
     width: 100%;
-    height: 180px; 
+    height: 160px; /* Tamaño uniforme para todas las fotos */
     object-fit: cover;
     border-radius: 6px;
     margin-bottom: 12px;
     background-color: #333;
 }
-.tarjeta-producto h4 { margin: 0 0 8px 0; color: #f1faee; font-size: 16px; line-height: 1.2; }
-.tarjeta-producto p.desc {
-    font-size: 13px;
-    color: #bbb;
-    margin-bottom: 15px;
+
+.tarjeta-producto h4 { 
+    margin: 0 0 8px 0; 
+    color: #f1faee; 
+    font-size: 17px; 
+}
+
+.tarjeta-producto p.desc { 
+    font-size: 13px; 
+    color: #bbb; 
+    margin-bottom: 15px; 
     line-height: 1.4;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 3; 
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
-.tarjeta-producto p.precio { color: #25D366; font-weight: bold; font-size: 18px; margin: 0 0 10px 0; }
 
-/* ==========================================================
-   ¡BLINDAJE NUCLEAR PARA EL INVENTARIO! (SOBRESCRIBE EL JS)
-   ========================================================== */
-.lista-productos {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
-    gap: 15px !important;
-    max-height: 600px !important;
-    overflow-y: auto !important;
-    margin-top: 20px !important;
-    padding-right: 5px !important;
-    text-align: left !important;
+.tarjeta-producto p.precio { 
+    color: #25D366; 
+    font-weight: bold; 
+    font-size: 18px; 
+    margin: 0 0 15px 0; 
 }
 
-.item-producto {
-    background-color: #2a2a2a !important;
-    padding: 15px !important;
-    border-radius: 8px !important;
-    border-top: 4px solid #e63946 !important;
-    border-left: none !important; 
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
-    height: 100% !important;
+/* --- BOTONES PREMIUM --- */
+.btn-whatsapp {
+    background-color: #25D366;
+    color: white;
+    border: none;
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold;
+    width: 100%;
+    transition: background-color 0.3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+.btn-whatsapp:hover { background-color: #1ebe57; }
+
+button { 
+    background-color: #e63946; 
+    color: white; 
+    border: none; 
+    padding: 12px 24px; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-size: 16px; 
+    font-weight: bold; 
+    transition: background-color 0.3s; 
+    width: 100%; 
+    margin-bottom: 10px; 
+}
+button:hover { background-color: #c1121f; }
+button:disabled { background-color: #555; cursor: not-allowed; }
+
+.btn-secundario { background-color: #4a4e69; }
+.btn-secundario:hover { background-color: #22223b; }
+.btn-pequeno { padding: 8px 16px; font-size: 14px; width: auto; margin-bottom: 20px; }
+
+/* --- PANEL DE ADMINISTRADOR --- */
+/* Acomodados horizontalmente para que no se estiren */
+.admin-grid { 
+    display: flex; 
+    flex-direction: row; 
+    justify-content: center; 
+    flex-wrap: wrap; 
+    gap: 15px; 
+    margin-top: 20px; 
+}
+.btn-modulo { background-color: #1d3557; text-align: center; padding: 12px 20px; width: auto; color: #f1faee; }
+.btn-modulo:hover { background-color: #457b9d; }
+.mt-20 { margin-top: 20px; }
+
+/* --- FORMULARIOS (LA CORRECCIÓN MAESTRA) --- */
+/* Separamos el ancho del formulario del ancho general de 1000px */
+#form-producto {
+    max-width: 550px;
+    margin: 0 auto 30px auto;
 }
 
-/* Forzamos la estructura interna a ser vertical, ignorando el "row" del JS */
-.item-producto > div {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 10px !important;
-    width: 100% !important;
-    height: 100% !important;
-}
-
-.foto-producto-lista {
-    width: 100% !important;
-    height: 140px !important;
-    object-fit: cover !important;
-    border-radius: 6px !important;
-    margin: 0 !important;
-    border: 1px solid #444 !important;
-}
-
-.info-producto-lista {
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
-    text-align: center !important;
-    width: 100% !important;
-    flex: 1 !important;
-}
-
-.info-producto-lista h4 { margin: 0 0 5px 0 !important; color: #f1faee !important; font-size: 15px !important; line-height: 1.2 !important; }
-
-.info-producto-lista p {
-    margin: 0 0 5px 0 !important;
-    font-size: 12px !important;
-    color: #bbb !important;
-    line-height: 1.4 !important;
-    display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important;
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-}
-
-.item-precio-stock { color: #81c784 !important; font-weight: bold !important; margin-bottom: 10px !important; }
-
-/* Forzamos a los botones Editar/Eliminar a acomodarse perfectamente uno al lado del otro */
-.info-producto-lista > div {
-    display: flex !important;
-    flex-direction: row !important; 
-    gap: 8px !important;
-    width: 100% !important;
-    justify-content: center !important;
-    margin-top: auto !important; 
-}
-
-.info-producto-lista > div button {
-    width: 48% !important;
-    padding: 8px !important;
-    font-size: 13px !important;
-    margin: 0 !important;
-    display: inline-block !important;
-    border-radius: 4px !important;
-}
-
-/* --- FORMULARIOS --- */
 input[type="email"], input[type="password"], input[type="text"], input[type="number"], input[type="url"], textarea {
-    width: 100%; padding: 12px; margin-bottom: 15px; background-color: #2a2a2a; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 16px; box-sizing: border-box; font-family: inherit;
+    width: 100%; 
+    padding: 12px; 
+    margin-bottom: 15px; 
+    background-color: #2a2a2a; 
+    color: #fff; 
+    border: 1px solid #555; 
+    border-radius: 6px; 
+    font-size: 16px; 
+    box-sizing: border-box; 
+    font-family: inherit;
 }
 input::placeholder, textarea::placeholder { color: #888; }
 textarea { resize: vertical; }
@@ -231,13 +182,107 @@ textarea { resize: vertical; }
 .fila-inputs { display: flex; gap: 10px; width: 100%; margin: 0 auto; }
 .fila-inputs input { width: 100%; }
 
-.mostrar-pass-container { display: flex; align-items: center; justify-content: center; width: 100%; margin: 0 auto 15px auto; font-size: 14px; color: #bbb; }
+.mostrar-pass-container { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    width: 100%; 
+    margin: 0 auto 15px auto; 
+    font-size: 14px; 
+    color: #bbb; 
+}
 .mostrar-pass-container input[type="checkbox"] { width: auto; margin: 0 8px 0 0; cursor: pointer; }
 .mostrar-pass-container label { cursor: pointer; }
 
-/* --- MODAL --- */
-.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.modal-contenido { background-color: #1e1e1e; padding: 30px; border-radius: 10px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-.modal-contenido h2 { color: #f1faee; margin-bottom: 20px; }
+/* --- LISTA DE PRODUCTOS (INVENTARIO 4 COLUMNAS) --- */
+.lista-productos { 
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    max-height: 500px; 
+    overflow-y: auto; 
+    margin-top: 15px; 
+    padding-right: 5px;
+    text-align: left;
+}
+
+.item-producto { 
+    background-color: #2a2a2a; 
+    padding: 15px; 
+    border-radius: 8px; 
+    border-top: 4px solid #e63946;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    display: flex; 
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.foto-producto-lista { 
+    width: 100%; 
+    height: 140px; 
+    object-fit: cover; 
+    border-radius: 8px; 
+    border: 1px solid #444; 
+    margin-bottom: 10px;
+}
+
+.info-producto-lista { 
+    display: flex;
+    flex-direction: column;
+    flex: 1; 
+    text-align: center;
+}
+
+.info-producto-lista h4 { margin: 0 0 5px 0; color: #f1faee; font-size: 16px; }
+.info-producto-lista p { 
+    margin: 0 0 5px 0; 
+    font-size: 13px; 
+    color: #bbb; 
+    line-height: 1.4; 
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.item-precio-stock { 
+    color: #81c784 !important; 
+    font-weight: bold; 
+    margin-bottom: 10px !important; 
+}
+
+.info-producto-lista div {
+    display: flex;
+    flex-direction: row; 
+    gap: 8px;
+    width: 100%;
+}
+
+.info-producto-lista div button {
+    width: 100%;
+    margin-bottom: 0;
+    padding: 8px;
+    font-size: 13px;
+}
+
+/* --- MODAL DE LOGIN --- */
+.modal { 
+    position: fixed; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%; 
+    background-color: rgba(0, 0, 0, 0.85); 
+    display: flex; justify-content: center; align-items: center; 
+    z-index: 1000;
+}
+.modal-contenido { 
+    background-color: #1e1e1e; 
+    padding: 30px; 
+    border-radius: 10px; 
+    width: 90%;
+    max-width: 350px; 
+    text-align: center; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
+}
+.modal-contenido h2 { color: #f1faee; margin-bottom: 20px;}
 .error { color: #ff6b6b; font-size: 14px; margin-top: 10px; }
 .oculto { display: none !important; }
