@@ -369,19 +369,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     ? `<img src="${prod.foto}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; margin-bottom: 10px;" alt="${nombre}">`
                     : `<div style="width: 100%; height: 110px; background-color: #333; display: flex; justify-content: center; align-items: center; font-size: 24px; border-radius: 6px; margin-bottom: 10px;">📦</div>`;
 
-                // INYECCIÓN DE FUERZA BRUTA PARA EL INVENTARIO ADMIN
                 divAdmin.innerHTML = `
                     <div style="display: flex; flex-direction: column; height: 100%; width: 100%; justify-content: space-between;">
                         <div>
                             ${imagenHTMLAdmin}
                             <div style="text-align: center;">
-                                <h4 title="${nombre}" style="margin: 0 0 5px 0; color: #f1faee; font-size: 14px;">${nombre}</h4>
-                                <p title="${desc}" style="margin: 0 0 10px 0; font-size: 12px; color: #bbb; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${desc}</p>
+                                <h4 title="${nombre}" style="margin: 0 0 5px 0; color: #f1faee; font-size: 13px; line-height: 1.2;">${nombre}</h4>
+                                <p title="${desc}" style="margin: 0 0 10px 0; font-size: 11.5px; color: #bbb; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${desc}</p>
                             </div>
                         </div>
                         
                         <div style="width: 100%;">
-                            <!-- CAJITA DE PRECIO Y STOCK CORTICA Y BRILLANTE -->
                             <div style="display: flex; justify-content: center; align-items: center; gap: 10px; background-color: #1a1a1a; padding: 6px; border-radius: 6px; border: 1px solid #333; margin-bottom: 10px; white-space: nowrap;">
                                 <span style="color: #00E676; font-weight: 900; font-size: 16px;">$${precioFormateado}</span>
                                 <span style="color: #666;">|</span>
@@ -414,8 +412,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             <div>
                                 ${imagenHTMLCliente}
                                 <div style="padding: 0 10px;">
-                                    <h4 style="margin: 0 0 5px 0; font-size: 14px; color: #f1faee;">${nombre}</h4>
-                                    <p class="desc" style="margin: 0 0 10px 0; font-size: 12px; color: #ccc; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${desc}</p>
+                                    <h4 style="margin: 0 0 5px 0; font-size: 13px; color: #f1faee; line-height: 1.2;">${nombre}</h4>
+                                    <p class="desc" style="margin: 0 0 10px 0; font-size: 11.5px; color: #ccc; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${desc}</p>
                                 </div>
                             </div>
                             <div style="padding: 10px; border-top: 1px solid #333; text-align: center;">
