@@ -74,6 +74,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const listaPedidosDiv = document.getElementById("lista-pedidos");
 
     // ==========================================
+    // MEMORIA LOCAL DEL CLIENTE (NUEVO)
+    // ==========================================
+    const cartNombreInput = document.getElementById("cart-nombre");
+    const cartTelefonoInput = document.getElementById("cart-telefono");
+    const cartDireccionInput = document.getElementById("cart-direccion");
+
+    // Cargar datos guardados si existen en el celular del cliente
+    cartNombreInput.value = localStorage.getItem("pp_nombre") || "";
+    cartTelefonoInput.value = localStorage.getItem("pp_telefono") || "";
+    cartDireccionInput.value = localStorage.getItem("pp_direccion") || "";
+
+    // ==========================================
     // ESCUCHADOR DE LA TASA BCV (PÚBLICO)
     // ==========================================
     onSnapshot(doc(db, "configuracion", "bcv"), (docSnap) => {
@@ -379,9 +391,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // === EL GRAN BOTÓN DE ENVÍO, AUTO-REGISTRO Y DESCUENTO DE STOCK ===
     btnEnviarWhatsapp.addEventListener("click", async () => {
         if (carrito.length === 0) return;
-        const nombreCliente = document.getElementById("cart-nombre").value.trim();
-        const tlfCliente = document.getElementById("cart-telefono").value.trim();
-        const dirCliente = document.getElementById("cart-direccion").value.trim();
+        const nombreCliente = cartNombreInput.value.trim();
+        const tlfCliente = cartTelefonoInput.value.trim();
+        const dirCliente = cartDireccionInput.value.trim();
 
         if (nombreCliente === "" || tlfCliente === "" || dirCliente === "") { alert("Por favor, completa todos tus datos para procesar el pedido."); return; }
 
@@ -403,6 +415,11 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const tlfLimpio = tlfCliente.replace(/\D/g, '');
 
+            // GUARDAMOS LOS DATOS EN EL TELÉFONO DEL CLIENTE PARA LA PRÓXIMA VEZ
+            localStorage.setItem("pp_nombre", nombreCliente);
+            localStorage.setItem("pp_telefono", tlfLimpio);
+            localStorage.setItem("pp_direccion", dirCliente);
+
             // 1. Guardar factura en Pedidos
             await addDoc(collection(db, "pedidos"), {
                 cliente: nombreCliente, telefono: tlfLimpio, direccion: dirCliente, productos: arrayProductosFactura,
@@ -417,14 +434,11 @@ document.addEventListener("DOMContentLoaded", () => {
             // 3. DESCONTAR EL INVENTARIO AUTOMÁTICAMENTE 
             for (const item of carrito) {
                 const productoRef = doc(db, "productos", item.id);
-                await updateDoc(productoRef, {
-                    stock: increment(-item.cantidad)
-                });
+                await updateDoc(productoRef, { stock: increment(-item.cantidad) });
             }
 
-            // Resetear el carrito y abrir WhatsApp
+            // Vaciamos el carrito pero dejamos los datos personales ahí escritos
             carrito = []; actualizarInterfazCarrito(); modalCarrito.classList.add("oculto");
-            document.getElementById("cart-nombre").value = ""; document.getElementById("cart-telefono").value = ""; document.getElementById("cart-direccion").value = "";
             
             window.open(`https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`, "_blank"); 
 
