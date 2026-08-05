@@ -42,6 +42,26 @@
         </div>
     </div>
 
+    <!-- BOTÓN FLOTANTE DEL CARRITO -->
+    <div id="btn-carrito-flotante" class="oculto">
+        🛒 <span id="contador-carrito">0</span>
+    </div>
+
+    <!-- MODAL DEL CARRITO DE COMPRAS -->
+    <div id="modal-carrito" class="modal oculto">
+        <div class="modal-contenido carrito-contenido">
+            <h2>Tu Pedido</h2>
+            <div id="lista-carrito">
+                <!-- Aquí aparecerán los productos seleccionados por el cliente -->
+            </div>
+            <div class="total-carrito">
+                <h3>Total: $<span id="total-precio">0.00</span></h3>
+            </div>
+            <button id="btn-enviar-whatsapp" class="btn-whatsapp">Enviar Pedido por WhatsApp</button>
+            <button id="btn-cerrar-carrito" class="btn-secundario">Seguir Comprando</button>
+        </div>
+    </div>
+
     <!-- MODAL DE LOGIN OCULTO -->
     <div id="modal-login" class="modal oculto">
         <div class="modal-contenido">
