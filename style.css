@@ -71,14 +71,15 @@ p { color: #b0b0b0; margin-bottom: 20px; }
     box-shadow: 0 6px 12px rgba(0,0,0,0.5);
 }
 
+/* LA REGLA NUCLEAR PARA LAS FOTOS */
 .tarjeta-producto img {
-    width: 100%;
-    /* CORRECCIÓN ARQUITECTÓNICA: Altura reducida a 110px para evitar el efecto alargado vertical */
-    height: 110px; 
-    object-fit: cover;
-    border-radius: 6px;
-    margin-bottom: 12px;
-    background-color: #333;
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 4/3 !important;
+    object-fit: cover !important;
+    border-radius: 6px 6px 0 0 !important;
+    margin-bottom: 12px !important;
+    background-color: #333 !important;
 }
 
 .tarjeta-producto h4 { 
@@ -223,8 +224,8 @@ textarea { resize: vertical; }
 
 .foto-producto-lista { 
     width: 100% !important; 
-    /* También lo reducimos aquí para que sea armónico con la vitrina pública */
-    height: 120px !important; 
+    height: auto !important; 
+    aspect-ratio: 4/3 !important;
     object-fit: cover !important; 
     border-radius: 8px !important; 
     border: 1px solid #444 !important; 
