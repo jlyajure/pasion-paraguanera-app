@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, doc, deleteDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, doc, deleteDoc, updateDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
@@ -135,15 +135,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     btnSalir.addEventListener("click", () => signOut(auth));
 
-    // AQUI ESTÁ LA MAGIA QUE ARREGLA EL PROBLEMA FANTASMA
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            // MODO DUEÑO: Activamos los monitores privados de Facturas y Clientes
             vistaCliente.classList.add("oculto");
             vistaAdmin.classList.remove("oculto");
             btnCarritoFlotante.classList.add("oculto"); 
 
-            // Cargar Clientes
             unsubClientes = onSnapshot(collection(db, "clientes"), (snapshot) => {
                 listaClientesDiv.innerHTML = ""; clientesActuales = [];
                 if (snapshot.empty) { listaClientesDiv.innerHTML = "<p>No hay clientes registrados aún.</p>"; return; }
@@ -152,7 +149,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 renderizarClientes();
             });
 
-            // Cargar Pedidos
             unsubPedidos = onSnapshot(collection(db, "pedidos"), (snapshot) => {
                 listaPedidosDiv.innerHTML = ""; pedidosActuales = [];
                 if (snapshot.empty) { listaPedidosDiv.innerHTML = "<p>Aún no hay pedidos registrados.</p>"; return; }
@@ -165,7 +161,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
         } else {
-            // MODO CLIENTE PÚBLICO: Apagamos los monitores privados por seguridad
             vistaAdmin.classList.add("oculto");
             moduloInventario.classList.add("oculto"); moduloClientes.classList.add("oculto"); moduloPedidos.classList.add("oculto");
             vistaCliente.classList.remove("oculto");
@@ -381,7 +376,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // === EL GRAN BOTÓN DE ENVÍO Y AUTO-REGISTRO BLINDADO ===
+    // === EL GRAN BOTÓN DE ENVÍO, AUTO-REGISTRO Y DESCUENTO DE STOCK ===
     btnEnviarWhatsapp.addEventListener("click", async () => {
         if (carrito.length === 0) return;
         const nombreCliente = document.getElementById("cart-nombre").value.trim();
@@ -414,11 +409,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 totalUSD: total.toFixed(2), totalVES: totalBs, estado: "Pendiente", fecha: serverTimestamp()
             });
 
-            // 2. AUTO-REGISTRO INTELIGENTE EN EL DIRECTORIO (Crea o actualiza usando el teléfono como ID)
+            // 2. AUTO-REGISTRO INTELIGENTE EN EL DIRECTORIO
             await setDoc(doc(db, "clientes", tlfLimpio), {
                 nombre: nombreCliente, telefono: tlfLimpio, direccion: dirCliente, fechaUltimoPedido: serverTimestamp()
             }, { merge: true });
 
+            // 3. DESCONTAR EL INVENTARIO AUTOMÁTICAMENTE 
+            for (const item of carrito) {
+                const productoRef = doc(db, "productos", item.id);
+                await updateDoc(productoRef, {
+                    stock: increment(-item.cantidad)
+                });
+            }
+
+            // Resetear el carrito y abrir WhatsApp
             carrito = []; actualizarInterfazCarrito(); modalCarrito.classList.add("oculto");
             document.getElementById("cart-nombre").value = ""; document.getElementById("cart-telefono").value = ""; document.getElementById("cart-direccion").value = "";
             
