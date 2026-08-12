@@ -28,7 +28,6 @@ let tasaBCV = 1;
 let unsubClientes = null;
 let unsubPedidos = null;
 
-// Función para asegurar que el número empiece con 58 para WhatsApp
 function formatearTelefono(tlf) {
     let limpio = tlf.replace(/\D/g, '');
     if (limpio.startsWith('0')) {
@@ -91,6 +90,19 @@ document.addEventListener("DOMContentLoaded", () => {
     cartNombreInput.value = localStorage.getItem("pp_nombre") || "";
     cartTelefonoInput.value = localStorage.getItem("pp_telefono") || "";
     cartDireccionInput.value = localStorage.getItem("pp_direccion") || "";
+
+    // INYECCIÓN DINÁMICA DEL SELECTOR DE PAGOS (Sin modificar HTML)
+    let cartTipoPago = document.getElementById("cart-tipo-pago");
+    if (!cartTipoPago && cartDireccionInput) {
+        cartTipoPago = document.createElement("select");
+        cartTipoPago.id = "cart-tipo-pago";
+        cartTipoPago.style.cssText = "width: 100%; padding: 10px; margin-top: 10px; border-radius: 4px; background-color: #222; color: #fff; border: 1px solid #444; font-size: 14px; cursor: pointer;";
+        cartTipoPago.innerHTML = `
+            <option value="contado">Pago al Contado (Completo)</option>
+            <option value="credito" id="opcion-credito" disabled>Pago a Crédito (Mínimo $10)</option>
+        `;
+        cartDireccionInput.parentNode.insertBefore(cartTipoPago, cartDireccionInput.nextSibling);
+    }
 
     onSnapshot(doc(db, "configuracion", "bcv"), (docSnap) => {
         if (docSnap.exists()) {
@@ -313,8 +325,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.open(`https://wa.me/${tlfLink}?text=${mensaje}`, "_blank");
             }
         }
-        
-        // NUEVO BOTÓN: ENVIAR PROMO
         if (e.target.closest(".btn-promo-cli")) {
             const cli = clientesActuales.find(c => c.id === e.target.closest(".btn-promo-cli").getAttribute("data-id"));
             if (cli && cli.telefono) {
@@ -334,8 +344,6 @@ document.addEventListener("DOMContentLoaded", () => {
             let seccionDeuda = estado === "Con Deuda" && deudaNum > 0 ? `<div style="background-color: #421818; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #ff6b6b; font-weight: bold; font-size: 14px;">Deuda: $${deudaNum.toFixed(2)}</span></div>` : `<div style="background-color: #1b3a20; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #81c784; font-weight: bold; font-size: 14px;">Cliente Solvente</span></div>`;
             
             let btnCobrar = estado === "Con Deuda" && deudaNum > 0 ? `<button class="btn-cobrar-cli btn-whatsapp" data-id="${cli.id}" style="width: 100%; margin-bottom: 10px; font-size: 13px; padding: 8px;">📲 Enviar Recordatorio</button>` : "";
-            
-            // EL BOTÓN DE PROMO ESTARÁ SIEMPRE VISIBLE EN AZUL
             let btnPromo = `<button class="btn-promo-cli" data-id="${cli.id}" style="width: 100%; margin-bottom: 10px; background-color: #0288d1; color: white; font-size: 13px; padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">📢 Enviar Promo</button>`;
 
             divCli.innerHTML = `<div style="display: flex; flex-direction: column; height: 100%; width: 100%; justify-content: space-between;"><div style="text-align: center; margin-bottom: 15px;"><h4 style="margin: 0 0 5px 0; color: #f1faee; font-size: 16px;">👤 ${nombre}</h4><p style="margin: 0 0 5px 0; font-size: 13px; color: #bbb;">📞 ${telefono}</p><p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">📍 ${direccion}</p>${seccionDeuda}</div><div style="width: 100%;">${btnCobrar}${btnPromo}<div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;"><button class="btn-editar-cli" data-id="${cli.id}" style="background: #ffc107; color: #000; width: 48%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">✏️ Editar</button><button class="btn-eliminar-cli" data-id="${cli.id}" style="background: #f44336; color: #fff; width: 48%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">🗑️ Eliminar</button></div></div></div>`;
@@ -353,10 +361,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const estado = pedido.estado || "Pendiente"; const fechaStr = pedido.fecha ? new Date(pedido.fecha.toMillis()).toLocaleString() : "Fecha desconocida"; const dirPed = pedido.direccion || "Sin dirección";
             let colorClase = estado === "Pendiente" ? "" : estado === "Completado" ? "completado" : "cancelado";
             let etiqueta = estado === "Pendiente" ? "🟡 Pendiente" : estado === "Completado" ? "🟢 Completado" : "🔴 Cancelado";
+            
+            // Agregamos la etiqueta visual si el pago es a crédito en el historial de facturas
+            let etiquetaModalidad = pedido.modalidadPago === "A Crédito" ? `<span style="background-color: #ff9800; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px;">A CRÉDITO</span>` : `<span style="background-color: #4caf50; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px;">CONTADO</span>`;
+
             let listaItems = ""; if (pedido.productos && Array.isArray(pedido.productos)) { pedido.productos.forEach(p => { listaItems += `<li>${p.cantidad}x ${p.nombre} ($${p.precio})</li>`; }); }
 
             const divPed = document.createElement("div"); divPed.className = `tarjeta-pedido ${colorClase}`;
-            divPed.innerHTML = `<div class="pedido-header"><h4>👤 ${pedido.cliente}</h4><span class="estado-badge">${etiqueta}</span></div><div class="pedido-cuerpo"><p>📞 WhatsApp: ${pedido.telefono}</p><p>📍 Dirección: ${dirPed}</p><p>🕒 Fecha: ${fechaStr}</p><ul>${listaItems}</ul><div class="totales">Total: $${parseFloat(pedido.totalUSD).toFixed(2)} | Bs. ${parseFloat(pedido.totalVES).toFixed(2)}</div></div><div class="pedido-acciones"><button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Completado" style="background-color: #4caf50;">✔️ Listo</button><button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Pendiente" style="background-color: #ff9800; color: #000;">🟡 Pdte</button><button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Cancelado" style="background-color: #f44336;">❌ Canc</button><button class="btn-eliminar-ped" data-id="${pedido.id}" style="background-color: #333;">🗑️ Borrar</button></div>`;
+            divPed.innerHTML = `<div class="pedido-header"><h4>👤 ${pedido.cliente}</h4><span class="estado-badge">${etiqueta}</span></div><div class="pedido-cuerpo"><p>📞 WhatsApp: ${pedido.telefono}</p><p>📍 Dirección: ${dirPed}</p><p>🕒 Fecha: ${fechaStr}</p><p>💳 Modalidad: ${etiquetaModalidad}</p><ul>${listaItems}</ul><div class="totales">Total: $${parseFloat(pedido.totalUSD).toFixed(2)} | Bs. ${parseFloat(pedido.totalVES).toFixed(2)}</div></div><div class="pedido-acciones"><button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Completado" style="background-color: #4caf50;">✔️ Listo</button><button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Pendiente" style="background-color: #ff9800; color: #000;">🟡 Pdte</button><button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Cancelado" style="background-color: #f44336;">❌ Canc</button><button class="btn-eliminar-ped" data-id="${pedido.id}" style="background-color: #333;">🗑️ Borrar</button></div>`;
             listaPedidosDiv.appendChild(divPed);
         });
     }
@@ -410,7 +422,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         const totalBs = (total * tasaBCV).toFixed(2);
-        mensaje += `%0A*TOTAL A PAGAR:*%0A💵 *$${total.toFixed(2)}*%0A🇻🇪 *Bs. ${totalBs}* (A tasa de Bs. ${tasaBCV.toFixed(2)})%0A%0A📍 *Dirección de entrega:* ${dirCliente}%0A%0A¿Tienen disponibilidad?`;
+        
+        // CAPTURAR EL TIPO DE PAGO SELECCIONADO
+        const tipoPagoSelect = document.getElementById("cart-tipo-pago");
+        const tipoPago = tipoPagoSelect ? tipoPagoSelect.value : "contado";
+        const modalidadTexto = tipoPago === "credito" ? "A CRÉDITO (Por cuotas) 🗓️" : "CONTADO (Completo) 💵";
+
+        mensaje += `%0A*TOTAL A PAGAR:*%0A💵 *$${total.toFixed(2)}*%0A🇻🇪 *Bs. ${totalBs}* (A tasa de Bs. ${tasaBCV.toFixed(2)})%0A%0A*MODALIDAD DE PAGO:* ${modalidadTexto}%0A📍 *Dirección de entrega:* ${dirCliente}%0A%0A¿Tienen disponibilidad?`;
 
         try {
             const tlfLimpio = formatearTelefono(tlfCliente);
@@ -421,7 +439,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             await addDoc(collection(db, "pedidos"), {
                 cliente: nombreCliente, telefono: tlfLimpio, direccion: dirCliente, productos: arrayProductosFactura,
-                totalUSD: total.toFixed(2), totalVES: totalBs, estado: "Pendiente", fecha: serverTimestamp()
+                totalUSD: total.toFixed(2), totalVES: totalBs, modalidadPago: tipoPago === "credito" ? "A Crédito" : "Contado", estado: "Pendiente", fecha: serverTimestamp()
             });
 
             await setDoc(doc(db, "clientes", tlfLimpio), {
@@ -455,5 +473,20 @@ document.addEventListener("DOMContentLoaded", () => {
             listaCarritoDiv.appendChild(div);
         });
         totalPrecioSpan.textContent = total.toFixed(2); totalPrecioBsSpan.textContent = (total * tasaBCV).toFixed(2);
+
+        // LÓGICA DE VALIDACIÓN DEL CRÉDITO (REGLA DE LOS $10)
+        const opcionCredito = document.getElementById("opcion-credito");
+        const selectPago = document.getElementById("cart-tipo-pago");
+        
+        if (opcionCredito && selectPago) {
+            if (total >= 10) {
+                opcionCredito.disabled = false;
+                opcionCredito.textContent = "Pago a Crédito (Acordar cuotas con el negocio)";
+            } else {
+                opcionCredito.disabled = true;
+                opcionCredito.textContent = "Pago a Crédito (Mínimo $10)";
+                selectPago.value = "contado"; // Forzar a contado si elimina productos y baja de $10
+            }
+        }
     }
 });
