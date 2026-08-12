@@ -91,7 +91,6 @@ document.addEventListener("DOMContentLoaded", () => {
     cartTelefonoInput.value = localStorage.getItem("pp_telefono") || "";
     cartDireccionInput.value = localStorage.getItem("pp_direccion") || "";
 
-    // INYECCIÓN DINÁMICA DEL SELECTOR DE PAGOS (Sin modificar HTML)
     let cartTipoPago = document.getElementById("cart-tipo-pago");
     if (!cartTipoPago && cartDireccionInput) {
         cartTipoPago = document.createElement("select");
@@ -333,6 +332,45 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.open(`https://wa.me/${tlfLink}?text=${mensaje}`, "_blank");
             }
         }
+        
+        // NUEVA FUNCIÓN: REGISTRAR ABONO Y ACTUALIZAR DEUDA
+        if (e.target.closest(".btn-abonar-cli")) {
+            const id = e.target.closest(".btn-abonar-cli").getAttribute("data-id");
+            const cli = clientesActuales.find(c => c.id === id);
+            if (cli) {
+                const montoActual = parseFloat(cli.deuda || 0);
+                const abonoStr = prompt(`¿Cuánto abonó ${cli.nombre} en dólares ($)?\nDeuda actual: $${montoActual.toFixed(2)}`);
+                
+                if (abonoStr !== null) {
+                    const abono = parseFloat(abonoStr.replace(',', '.'));
+                    if (!isNaN(abono) && abono > 0) {
+                        let nuevaDeuda = montoActual - abono;
+                        let nuevoEstado = cli.estado;
+                        
+                        if (nuevaDeuda <= 0) {
+                            nuevaDeuda = 0;
+                            nuevoEstado = "Al día";
+                            alert(`¡Deuda saldada! ${cli.nombre} ahora está solvente.`);
+                        } else {
+                            alert(`Abono registrado correctamente.\nLa nueva deuda de ${cli.nombre} es de: $${nuevaDeuda.toFixed(2)}`);
+                        }
+                        
+                        try {
+                            const btn = e.target.closest(".btn-abonar-cli");
+                            btn.textContent = "Procesando...";
+                            await updateDoc(doc(db, "clientes", id), {
+                                deuda: nuevaDeuda,
+                                estado: nuevoEstado
+                            });
+                        } catch (error) {
+                            alert("Ocurrió un error al registrar el abono. Inténtalo de nuevo.");
+                        }
+                    } else {
+                        alert("Por favor ingresa un monto válido mayor a 0.");
+                    }
+                }
+            }
+        }
     });
 
     function renderizarClientes() {
@@ -343,10 +381,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const divCli = document.createElement("div"); divCli.classList.add("item-producto"); divCli.style.borderTopColor = estado === "Con Deuda" ? "#f44336" : "#4caf50";
             let seccionDeuda = estado === "Con Deuda" && deudaNum > 0 ? `<div style="background-color: #421818; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #ff6b6b; font-weight: bold; font-size: 14px;">Deuda: $${deudaNum.toFixed(2)}</span></div>` : `<div style="background-color: #1b3a20; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #81c784; font-weight: bold; font-size: 14px;">Cliente Solvente</span></div>`;
             
+            // EL NUEVO BOTÓN DE ABONO QUE SOLO SALE SI HAY DEUDA
+            let btnAbonar = estado === "Con Deuda" && deudaNum > 0 ? `<button class="btn-abonar-cli" data-id="${cli.id}" style="width: 100%; margin-bottom: 10px; background-color: #4caf50; color: white; font-size: 13px; padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">💵 Registrar Abono</button>` : "";
+            
             let btnCobrar = estado === "Con Deuda" && deudaNum > 0 ? `<button class="btn-cobrar-cli btn-whatsapp" data-id="${cli.id}" style="width: 100%; margin-bottom: 10px; font-size: 13px; padding: 8px;">📲 Enviar Recordatorio</button>` : "";
             let btnPromo = `<button class="btn-promo-cli" data-id="${cli.id}" style="width: 100%; margin-bottom: 10px; background-color: #0288d1; color: white; font-size: 13px; padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">📢 Enviar Promo</button>`;
 
-            divCli.innerHTML = `<div style="display: flex; flex-direction: column; height: 100%; width: 100%; justify-content: space-between;"><div style="text-align: center; margin-bottom: 15px;"><h4 style="margin: 0 0 5px 0; color: #f1faee; font-size: 16px;">👤 ${nombre}</h4><p style="margin: 0 0 5px 0; font-size: 13px; color: #bbb;">📞 ${telefono}</p><p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">📍 ${direccion}</p>${seccionDeuda}</div><div style="width: 100%;">${btnCobrar}${btnPromo}<div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;"><button class="btn-editar-cli" data-id="${cli.id}" style="background: #ffc107; color: #000; width: 48%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">✏️ Editar</button><button class="btn-eliminar-cli" data-id="${cli.id}" style="background: #f44336; color: #fff; width: 48%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">🗑️ Eliminar</button></div></div></div>`;
+            divCli.innerHTML = `<div style="display: flex; flex-direction: column; height: 100%; width: 100%; justify-content: space-between;"><div style="text-align: center; margin-bottom: 15px;"><h4 style="margin: 0 0 5px 0; color: #f1faee; font-size: 16px;">👤 ${nombre}</h4><p style="margin: 0 0 5px 0; font-size: 13px; color: #bbb;">📞 ${telefono}</p><p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">📍 ${direccion}</p>${seccionDeuda}</div><div style="width: 100%;">${btnAbonar}${btnCobrar}${btnPromo}<div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;"><button class="btn-editar-cli" data-id="${cli.id}" style="background: #ffc107; color: #000; width: 48%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">✏️ Editar</button><button class="btn-eliminar-cli" data-id="${cli.id}" style="background: #f44336; color: #fff; width: 48%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">🗑️ Eliminar</button></div></div></div>`;
             listaClientesDiv.appendChild(divCli);
         });
     }
@@ -362,7 +403,6 @@ document.addEventListener("DOMContentLoaded", () => {
             let colorClase = estado === "Pendiente" ? "" : estado === "Completado" ? "completado" : "cancelado";
             let etiqueta = estado === "Pendiente" ? "🟡 Pendiente" : estado === "Completado" ? "🟢 Completado" : "🔴 Cancelado";
             
-            // Agregamos la etiqueta visual si el pago es a crédito en el historial de facturas
             let etiquetaModalidad = pedido.modalidadPago === "A Crédito" ? `<span style="background-color: #ff9800; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px;">A CRÉDITO</span>` : `<span style="background-color: #4caf50; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px;">CONTADO</span>`;
 
             let listaItems = ""; if (pedido.productos && Array.isArray(pedido.productos)) { pedido.productos.forEach(p => { listaItems += `<li>${p.cantidad}x ${p.nombre} ($${p.precio})</li>`; }); }
@@ -423,7 +463,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const totalBs = (total * tasaBCV).toFixed(2);
         
-        // CAPTURAR EL TIPO DE PAGO SELECCIONADO
         const tipoPagoSelect = document.getElementById("cart-tipo-pago");
         const tipoPago = tipoPagoSelect ? tipoPagoSelect.value : "contado";
         const modalidadTexto = tipoPago === "credito" ? "A CRÉDITO (Por cuotas) 🗓️" : "CONTADO (Completo) 💵";
@@ -474,7 +513,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         totalPrecioSpan.textContent = total.toFixed(2); totalPrecioBsSpan.textContent = (total * tasaBCV).toFixed(2);
 
-        // LÓGICA DE VALIDACIÓN DEL CRÉDITO (REGLA DE LOS $10)
         const opcionCredito = document.getElementById("opcion-credito");
         const selectPago = document.getElementById("cart-tipo-pago");
         
@@ -485,7 +523,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 opcionCredito.disabled = true;
                 opcionCredito.textContent = "Pago a Crédito (Mínimo $10)";
-                selectPago.value = "contado"; // Forzar a contado si elimina productos y baja de $10
+                selectPago.value = "contado"; 
             }
         }
     }
