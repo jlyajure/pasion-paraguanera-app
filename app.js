@@ -167,7 +167,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             unsubClientes = onSnapshot(collection(db, "clientes"), (snapshot) => {
                 listaClientesDiv.innerHTML = ""; clientesActuales = [];
-                if (snapshot.empty) { listaClientesDiv.innerHTML = "<p>No hay clientes registrados aún.</p>"; return; }
+                if (snapshot.empty) { 
+                    renderizarClientes(); // Lo llamamos para que renderice el banner en cero
+                    listaClientesDiv.innerHTML = "<p>No hay clientes registrados aún.</p>"; 
+                    return; 
+                }
                 snapshot.forEach((doc) => { clientesActuales.push({ id: doc.id, ...doc.data() }); });
                 clientesActuales.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
                 renderizarClientes();
@@ -249,7 +253,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderizarTodo() {
         listaProductosDiv.innerHTML = ""; if (catalogoPublico) catalogoPublico.innerHTML = ""; 
         
-        // INYECCIÓN DINÁMICA DEL BANNER DE RESUMEN DE INVENTARIO
         let divResumen = document.getElementById("resumen-total-inventario");
         if (!divResumen) {
             divResumen = document.createElement("div");
@@ -269,14 +272,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const iconoWhatsApp = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 6px; vertical-align: text-bottom;"><path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>`;
 
-        let valorTotalInversion = 0; // Acumulador para la suma del capital
+        let valorTotalInversion = 0;
 
         productosActuales.forEach((prod) => {
             const nombre = prod.nombre || "Sin nombre"; const desc = prod.descripcion || "";
             const stock = parseInt(prod.stock) || 0; const precioNum = typeof prod.precio === 'number' ? prod.precio : parseFloat(prod.precio || 0);
             const precioUSD = precioNum.toFixed(2); const precioVES = (precioNum * tasaBCV).toFixed(2);
             
-            // Calculamos el valor de este producto y lo sumamos al total del capital
             valorTotalInversion += (stock * precioNum);
 
             const divAdmin = document.createElement("div"); divAdmin.classList.add("item-producto");
@@ -306,7 +308,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        // Actualizamos el banner con los totales calculados
         const totalBs = (valorTotalInversion * tasaBCV).toFixed(2);
         divResumen.innerHTML = `<h3 style="margin: 0 0 5px 0; color: #81c784; font-size: 16px;">💰 Capital Total en Inventario</h3><span style="font-size: 22px; color: #fff; font-weight: bold;">$${valorTotalInversion.toFixed(2)}</span> <span style="color: #bbb; font-size: 14px;">| Bs. ${totalBs}</span>`;
 
@@ -396,9 +397,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function renderizarClientes() {
+        // INYECCIÓN DINÁMICA DEL BANNER DE RESUMEN DE DEUDAS
+        let divResumenDeudas = document.getElementById("resumen-total-deudas");
+        if (!divResumenDeudas) {
+            divResumenDeudas = document.createElement("div");
+            divResumenDeudas.id = "resumen-total-deudas";
+            divResumenDeudas.style.cssText = "background-color: #421818; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; border: 1px solid #f44336;";
+            listaClientesDiv.parentNode.insertBefore(divResumenDeudas, listaClientesDiv);
+        }
+
+        let totalDeudaPendiente = 0;
+
         clientesActuales.forEach((cli) => {
             const nombre = cli.nombre || "Sin nombre"; const telefono = cli.telefono || "Sin número"; const direccion = cli.direccion || "Sin dirección registrada";
             const estado = cli.estado || "Al día"; const deudaNum = parseFloat(cli.deuda || 0);
+            
+            // Sumar la deuda al acumulador total
+            totalDeudaPendiente += deudaNum;
             
             const divCli = document.createElement("div"); divCli.classList.add("item-producto"); divCli.style.borderTopColor = estado === "Con Deuda" ? "#f44336" : "#4caf50";
             let seccionDeuda = estado === "Con Deuda" && deudaNum > 0 ? `<div style="background-color: #421818; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #ff6b6b; font-weight: bold; font-size: 14px;">Deuda: $${deudaNum.toFixed(2)}</span></div>` : `<div style="background-color: #1b3a20; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #81c784; font-weight: bold; font-size: 14px;">Cliente Solvente</span></div>`;
@@ -411,6 +426,16 @@ document.addEventListener("DOMContentLoaded", () => {
             divCli.innerHTML = `<div style="display: flex; flex-direction: column; height: 100%; width: 100%; justify-content: space-between;"><div style="text-align: center; margin-bottom: 15px;"><h4 style="margin: 0 0 5px 0; color: #f1faee; font-size: 16px;">👤 ${nombre}</h4><p style="margin: 0 0 5px 0; font-size: 13px; color: #bbb;">📞 ${telefono}</p><p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">📍 ${direccion}</p>${seccionDeuda}</div><div style="width: 100%;">${btnAbonar}${btnCobrar}${btnPromo}<div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;"><button class="btn-editar-cli" data-id="${cli.id}" style="background: #ffc107; color: #000; width: 48%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">✏️ Editar</button><button class="btn-eliminar-cli" data-id="${cli.id}" style="background: #f44336; color: #fff; width: 48%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">🗑️ Eliminar</button></div></div></div>`;
             listaClientesDiv.appendChild(divCli);
         });
+
+        // Actualizamos el banner con los totales calculados de las cuentas por cobrar
+        const totalDeudaBs = (totalDeudaPendiente * tasaBCV).toFixed(2);
+        divResumenDeudas.innerHTML = `<h3 style="margin: 0 0 5px 0; color: #ff6b6b; font-size: 16px;">📕 Total Cuentas por Cobrar (Deudas)</h3><span style="font-size: 22px; color: #fff; font-weight: bold;">$${totalDeudaPendiente.toFixed(2)}</span> <span style="color: #bbb; font-size: 14px;">| Bs. ${totalDeudaBs}</span>`;
+
+        if (clientesActuales.length === 0) {
+            divResumenDeudas.style.display = "none";
+        } else {
+            divResumenDeudas.style.display = "block";
+        }
     }
 
     listaPedidosDiv.addEventListener("click", async (e) => {
