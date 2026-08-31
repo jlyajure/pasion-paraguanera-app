@@ -248,18 +248,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderizarTodo() {
         listaProductosDiv.innerHTML = ""; if (catalogoPublico) catalogoPublico.innerHTML = ""; 
+        
+        // INYECCIÓN DINÁMICA DEL BANNER DE RESUMEN DE INVENTARIO
+        let divResumen = document.getElementById("resumen-total-inventario");
+        if (!divResumen) {
+            divResumen = document.createElement("div");
+            divResumen.id = "resumen-total-inventario";
+            divResumen.style.cssText = "background-color: #1b3a20; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; border: 1px solid #4caf50;";
+            listaProductosDiv.parentNode.insertBefore(divResumen, listaProductosDiv);
+        }
+
         if (productosActuales.length === 0) {
             listaProductosDiv.innerHTML = "<p>No hay productos registrados aún.</p>";
-            if (catalogoPublico) catalogoPublico.innerHTML = "<p style='text-align:center; width:100%; color:#aaa;'>El catálogo está vacío por ahora.</p>"; return;
+            divResumen.style.display = "none";
+            if (catalogoPublico) catalogoPublico.innerHTML = "<p style='text-align:center; width:100%; color:#aaa;'>El catálogo está vacío por ahora.</p>"; 
+            return;
+        } else {
+            divResumen.style.display = "block";
         }
 
         const iconoWhatsApp = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 6px; vertical-align: text-bottom;"><path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>`;
+
+        let valorTotalInversion = 0; // Acumulador para la suma del capital
 
         productosActuales.forEach((prod) => {
             const nombre = prod.nombre || "Sin nombre"; const desc = prod.descripcion || "";
             const stock = parseInt(prod.stock) || 0; const precioNum = typeof prod.precio === 'number' ? prod.precio : parseFloat(prod.precio || 0);
             const precioUSD = precioNum.toFixed(2); const precioVES = (precioNum * tasaBCV).toFixed(2);
             
+            // Calculamos el valor de este producto y lo sumamos al total del capital
+            valorTotalInversion += (stock * precioNum);
+
             const divAdmin = document.createElement("div"); divAdmin.classList.add("item-producto");
             const imagenHTMLAdmin = prod.foto ? `<img src="${prod.foto}" class="foto-producto-lista" alt="${nombre}">` : `<div class="foto-producto-lista" style="background-color: #333; display: flex; justify-content: center; align-items: center; font-size: 24px;">📦</div>`;
 
@@ -286,6 +305,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 catalogoPublico.appendChild(divCliente);
             }
         });
+
+        // Actualizamos el banner con los totales calculados
+        const totalBs = (valorTotalInversion * tasaBCV).toFixed(2);
+        divResumen.innerHTML = `<h3 style="margin: 0 0 5px 0; color: #81c784; font-size: 16px;">💰 Capital Total en Inventario</h3><span style="font-size: 22px; color: #fff; font-weight: bold;">$${valorTotalInversion.toFixed(2)}</span> <span style="color: #bbb; font-size: 14px;">| Bs. ${totalBs}</span>`;
+
         actualizarInterfazCarrito(); renderizarListaCarrito();
     }
 
@@ -332,8 +356,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.open(`https://wa.me/${tlfLink}?text=${mensaje}`, "_blank");
             }
         }
-        
-        // NUEVA FUNCIÓN: REGISTRAR ABONO Y ACTUALIZAR DEUDA
         if (e.target.closest(".btn-abonar-cli")) {
             const id = e.target.closest(".btn-abonar-cli").getAttribute("data-id");
             const cli = clientesActuales.find(c => c.id === id);
@@ -381,7 +403,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const divCli = document.createElement("div"); divCli.classList.add("item-producto"); divCli.style.borderTopColor = estado === "Con Deuda" ? "#f44336" : "#4caf50";
             let seccionDeuda = estado === "Con Deuda" && deudaNum > 0 ? `<div style="background-color: #421818; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #ff6b6b; font-weight: bold; font-size: 14px;">Deuda: $${deudaNum.toFixed(2)}</span></div>` : `<div style="background-color: #1b3a20; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #81c784; font-weight: bold; font-size: 14px;">Cliente Solvente</span></div>`;
             
-            // EL NUEVO BOTÓN DE ABONO QUE SOLO SALE SI HAY DEUDA
             let btnAbonar = estado === "Con Deuda" && deudaNum > 0 ? `<button class="btn-abonar-cli" data-id="${cli.id}" style="width: 100%; margin-bottom: 10px; background-color: #4caf50; color: white; font-size: 13px; padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">💵 Registrar Abono</button>` : "";
             
             let btnCobrar = estado === "Con Deuda" && deudaNum > 0 ? `<button class="btn-cobrar-cli btn-whatsapp" data-id="${cli.id}" style="width: 100%; margin-bottom: 10px; font-size: 13px; padding: 8px;">📲 Enviar Recordatorio</button>` : "";
