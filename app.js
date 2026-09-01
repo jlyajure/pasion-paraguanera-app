@@ -98,7 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
         cartTipoPago.style.cssText = "width: 100%; padding: 10px; margin-top: 10px; border-radius: 4px; background-color: #222; color: #fff; border: 1px solid #444; font-size: 14px; cursor: pointer;";
         cartTipoPago.innerHTML = `
             <option value="contado">Pago al Contado (Completo)</option>
-            <option value="credito" id="opcion-credito" disabled>Pago a Crédito (Mínimo $10)</option>
+            <option value="credito" id="opcion-credito">Pago a Crédito (Acordar cuotas con el negocio)</option>
         `;
         cartDireccionInput.parentNode.insertBefore(cartTipoPago, cartDireccionInput.nextSibling);
     }
@@ -168,7 +168,7 @@ document.addEventListener("DOMContentLoaded", () => {
             unsubClientes = onSnapshot(collection(db, "clientes"), (snapshot) => {
                 listaClientesDiv.innerHTML = ""; clientesActuales = [];
                 if (snapshot.empty) { 
-                    renderizarClientes(); // Lo llamamos para que renderice el banner en cero
+                    renderizarClientes();
                     listaClientesDiv.innerHTML = "<p>No hay clientes registrados aún.</p>"; 
                     return; 
                 }
@@ -397,7 +397,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function renderizarClientes() {
-        // INYECCIÓN DINÁMICA DEL BANNER DE RESUMEN DE DEUDAS
         let divResumenDeudas = document.getElementById("resumen-total-deudas");
         if (!divResumenDeudas) {
             divResumenDeudas = document.createElement("div");
@@ -412,7 +411,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const nombre = cli.nombre || "Sin nombre"; const telefono = cli.telefono || "Sin número"; const direccion = cli.direccion || "Sin dirección registrada";
             const estado = cli.estado || "Al día"; const deudaNum = parseFloat(cli.deuda || 0);
             
-            // Sumar la deuda al acumulador total
             totalDeudaPendiente += deudaNum;
             
             const divCli = document.createElement("div"); divCli.classList.add("item-producto"); divCli.style.borderTopColor = estado === "Con Deuda" ? "#f44336" : "#4caf50";
@@ -427,7 +425,6 @@ document.addEventListener("DOMContentLoaded", () => {
             listaClientesDiv.appendChild(divCli);
         });
 
-        // Actualizamos el banner con los totales calculados de las cuentas por cobrar
         const totalDeudaBs = (totalDeudaPendiente * tasaBCV).toFixed(2);
         divResumenDeudas.innerHTML = `<h3 style="margin: 0 0 5px 0; color: #ff6b6b; font-size: 16px;">📕 Total Cuentas por Cobrar (Deudas)</h3><span style="font-size: 22px; color: #fff; font-weight: bold;">$${totalDeudaPendiente.toFixed(2)}</span> <span style="color: #bbb; font-size: 14px;">| Bs. ${totalDeudaBs}</span>`;
 
@@ -558,19 +555,5 @@ document.addEventListener("DOMContentLoaded", () => {
             listaCarritoDiv.appendChild(div);
         });
         totalPrecioSpan.textContent = total.toFixed(2); totalPrecioBsSpan.textContent = (total * tasaBCV).toFixed(2);
-
-        const opcionCredito = document.getElementById("opcion-credito");
-        const selectPago = document.getElementById("cart-tipo-pago");
-        
-        if (opcionCredito && selectPago) {
-            if (total >= 10) {
-                opcionCredito.disabled = false;
-                opcionCredito.textContent = "Pago a Crédito (Acordar cuotas con el negocio)";
-            } else {
-                opcionCredito.disabled = true;
-                opcionCredito.textContent = "Pago a Crédito (Mínimo $10)";
-                selectPago.value = "contado"; 
-            }
-        }
     }
 });
