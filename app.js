@@ -1,6 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, doc, deleteDoc, updateDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import Swal from 'https://cdn.jsdelivr.net/npm/sweetalert2@11/+esm';
+
+// Inyectamos el tema oscuro para las nuevas ventanas elegantes
+const linkTema = document.createElement('link');
+linkTema.rel = 'stylesheet';
+linkTema.href = 'https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5/dark.css';
+document.head.appendChild(linkTema);
 
 const firebaseConfig = {
   apiKey: "AIzaSyAk9ReIO8iVHADCVEa75mREhj1T8vt6Kvc",
@@ -30,12 +37,8 @@ let unsubPedidos = null;
 
 function formatearTelefono(tlf) {
     let limpio = tlf.replace(/\D/g, '');
-    if (limpio.startsWith('0')) {
-        return '58' + limpio.substring(1);
-    }
-    if (limpio.length === 10 && !limpio.startsWith('58')) {
-        return '58' + limpio;
-    }
+    if (limpio.startsWith('0')) { return '58' + limpio.substring(1); }
+    if (limpio.length === 10 && !limpio.startsWith('58')) { return '58' + limpio; }
     return limpio;
 }
 
@@ -127,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 btn.textContent = "¡Actualizado!";
                 setTimeout(() => btn.textContent = "Fijar Tasa", 2000);
             } catch (error) {
-                alert("Error al fijar la tasa.");
+                Swal.fire({ title: "Error", text: "Ocurrió un error al fijar la tasa.", icon: "error" });
                 btn.textContent = "Fijar Tasa";
             }
         }
@@ -229,9 +232,22 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (error) { btnGuardarProd.disabled = false; btnGuardarProd.textContent = "Error"; setTimeout(() => { btnGuardarProd.textContent = textoOriginal; }, 3000); }
     });
 
-    listaProductosDiv.addEventListener("click", async (e) => {
+    listaProductosDiv.addEventListener("click", (e) => {
         if (e.target.closest(".btn-eliminar")) {
-            if (confirm("¿Eliminar producto definitivamente?")) { await deleteDoc(doc(db, "productos", e.target.closest(".btn-eliminar").getAttribute("data-id"))); }
+            Swal.fire({
+                title: '¿Eliminar producto?',
+                text: "Esta acción borrará el producto del catálogo.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f44336',
+                cancelButtonColor: '#555',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await deleteDoc(doc(db, "productos", e.target.closest(".btn-eliminar").getAttribute("data-id")));
+                }
+            });
         }
         if (e.target.closest(".btn-editar")) {
             const id = e.target.closest(".btn-editar").getAttribute("data-id"); const prod = productosActuales.find(p => p.id === id);
@@ -329,8 +345,23 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (error) { btnGuardarCli.disabled = false; btnGuardarCli.textContent = "Error"; setTimeout(() => { btnGuardarCli.textContent = textoOriginal; }, 3000); }
     });
 
-    listaClientesDiv.addEventListener("click", async (e) => {
-        if (e.target.closest(".btn-eliminar-cli")) { if (confirm("¿Eliminar este cliente definitivamente?")) { await deleteDoc(doc(db, "clientes", e.target.closest(".btn-eliminar-cli").getAttribute("data-id"))); } }
+    listaClientesDiv.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-eliminar-cli")) { 
+            Swal.fire({
+                title: '¿Eliminar cliente?',
+                text: "Esta acción borrará el registro del cliente definitivamente.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f44336',
+                cancelButtonColor: '#555',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await deleteDoc(doc(db, "clientes", e.target.closest(".btn-eliminar-cli").getAttribute("data-id")));
+                }
+            });
+        }
         if (e.target.closest(".btn-editar-cli")) {
             const id = e.target.closest(".btn-editar-cli").getAttribute("data-id"); const cli = clientesActuales.find(c => c.id === id);
             if (cli) {
@@ -362,36 +393,42 @@ document.addEventListener("DOMContentLoaded", () => {
             const cli = clientesActuales.find(c => c.id === id);
             if (cli) {
                 const montoActual = parseFloat(cli.deuda || 0);
-                const abonoStr = prompt(`¿Cuánto abonó ${cli.nombre} en dólares ($)?\nDeuda actual: $${montoActual.toFixed(2)}`);
-                
-                if (abonoStr !== null) {
-                    const abono = parseFloat(abonoStr.replace(',', '.'));
-                    if (!isNaN(abono) && abono > 0) {
-                        let nuevaDeuda = montoActual - abono;
-                        let nuevoEstado = cli.estado;
-                        
-                        if (nuevaDeuda <= 0) {
-                            nuevaDeuda = 0;
-                            nuevoEstado = "Al día";
-                            alert(`¡Deuda saldada! ${cli.nombre} ahora está solvente.`);
+                Swal.fire({
+                    title: `Abono de ${cli.nombre}`,
+                    text: `Deuda actual: $${montoActual.toFixed(2)}`,
+                    input: 'text',
+                    inputPlaceholder: 'Ej: 5',
+                    showCancelButton: true,
+                    confirmButtonText: 'Registrar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#4caf50'
+                }).then(async (result) => {
+                    if (result.isConfirmed && result.value) {
+                        const abono = parseFloat(result.value.replace(',', '.'));
+                        if (!isNaN(abono) && abono > 0) {
+                            let nuevaDeuda = montoActual - abono;
+                            let nuevoEstado = cli.estado;
+                            
+                            if (nuevaDeuda <= 0) {
+                                nuevaDeuda = 0;
+                                nuevoEstado = "Al día";
+                                Swal.fire({ title: "¡Deuda saldada!", text: `${cli.nombre} ahora está solvente.`, icon: "success" });
+                            } else {
+                                Swal.fire({ title: "Abono registrado", text: `La nueva deuda es de: $${nuevaDeuda.toFixed(2)}`, icon: "success" });
+                            }
+                            
+                            try {
+                                const btn = e.target.closest(".btn-abonar-cli");
+                                btn.textContent = "Procesando...";
+                                await updateDoc(doc(db, "clientes", id), { deuda: nuevaDeuda, estado: nuevoEstado });
+                            } catch (error) {
+                                Swal.fire({ title: "Error", text: "Ocurrió un error al registrar el abono.", icon: "error" });
+                            }
                         } else {
-                            alert(`Abono registrado correctamente.\nLa nueva deuda de ${cli.nombre} es de: $${nuevaDeuda.toFixed(2)}`);
+                            Swal.fire({ title: "Monto inválido", text: "Por favor ingresa un monto mayor a 0.", icon: "warning" });
                         }
-                        
-                        try {
-                            const btn = e.target.closest(".btn-abonar-cli");
-                            btn.textContent = "Procesando...";
-                            await updateDoc(doc(db, "clientes", id), {
-                                deuda: nuevaDeuda,
-                                estado: nuevoEstado
-                            });
-                        } catch (error) {
-                            alert("Ocurrió un error al registrar el abono. Inténtalo de nuevo.");
-                        }
-                    } else {
-                        alert("Por favor ingresa un monto válido mayor a 0.");
                     }
-                }
+                });
             }
         }
     });
@@ -435,9 +472,26 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    listaPedidosDiv.addEventListener("click", async (e) => {
-        if (e.target.closest(".btn-estado-ped")) { await updateDoc(doc(db, "pedidos", e.target.closest(".btn-estado-ped").getAttribute("data-id")), { estado: e.target.closest(".btn-estado-ped").getAttribute("data-estado") }); }
-        if (e.target.closest(".btn-eliminar-ped")) { if (confirm("¿Borrar esta factura del historial?")) { await deleteDoc(doc(db, "pedidos", e.target.closest(".btn-eliminar-ped").getAttribute("data-id"))); } }
+    listaPedidosDiv.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-estado-ped")) { 
+            updateDoc(doc(db, "pedidos", e.target.closest(".btn-estado-ped").getAttribute("data-id")), { estado: e.target.closest(".btn-estado-ped").getAttribute("data-estado") }); 
+        }
+        if (e.target.closest(".btn-eliminar-ped")) { 
+            Swal.fire({
+                title: '¿Borrar factura?',
+                text: "Esta factura desaparecerá del historial.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#333',
+                cancelButtonColor: '#555',
+                confirmButtonText: 'Sí, borrar',
+                cancelButtonText: 'Cancelar'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await deleteDoc(doc(db, "pedidos", e.target.closest(".btn-eliminar-ped").getAttribute("data-id")));
+                }
+            });
+        }
     });
 
     function renderizarPedidos() {
@@ -461,7 +515,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const btn = e.target.closest(".btn-agregar-carrito"); const id = btn.getAttribute("data-id"); const prod = productosActuales.find(p => p.id === id);
             if (prod) {
                 const stockDisponible = parseInt(prod.stock) || 0; const index = carrito.findIndex(item => item.id === id); let cantidadActual = index > -1 ? carrito[index].cantidad : 0;
-                if (cantidadActual >= stockDisponible) { alert(`¡Lo sentimos! Solo quedan ${stockDisponible} unidades.`); return; }
+                if (cantidadActual >= stockDisponible) { 
+                    Swal.fire({ title: "Límite alcanzado", text: `¡Lo sentimos! Solo quedan ${stockDisponible} unidades disponibles.`, icon: "warning" }); 
+                    return; 
+                }
                 if (index > -1) { carrito[index].cantidad++; } else { carrito.push({ ...prod, cantidad: 1 }); }
                 const textoOriginal = btn.innerHTML; btn.innerHTML = "¡Agregado! ✔️"; btn.style.backgroundColor = "#4caf50"; setTimeout(() => { btn.innerHTML = textoOriginal; btn.style.backgroundColor = "#25D366"; }, 1000); actualizarInterfazCarrito();
             }
@@ -470,14 +527,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
     btnCarritoFlotante.addEventListener("click", () => { renderizarListaCarrito(); modalCarrito.classList.remove("oculto"); });
     btnCerrarCarrito.addEventListener("click", () => { modalCarrito.classList.add("oculto"); });
-    btnVaciarCarrito.addEventListener("click", () => { if (confirm("¿Estás seguro de que deseas cancelar tu pedido y vaciar el carrito?")) { carrito = []; actualizarInterfazCarrito(); modalCarrito.classList.add("oculto"); } });
+    btnVaciarCarrito.addEventListener("click", () => { 
+        Swal.fire({
+            title: '¿Vaciar el carrito?',
+            text: "Se cancelará el pedido actual.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f44336',
+            cancelButtonColor: '#555',
+            confirmButtonText: 'Sí, vaciar',
+            cancelButtonText: 'Volver'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                carrito = []; actualizarInterfazCarrito(); modalCarrito.classList.add("oculto");
+            }
+        });
+    });
 
     listaCarritoDiv.addEventListener("click", (e) => {
         if (e.target.closest(".btn-cantidad")) {
             const btn = e.target.closest(".btn-cantidad"); const id = btn.getAttribute("data-id"); const accion = btn.getAttribute("data-accion"); const index = carrito.findIndex(item => item.id === id);
             if (index > -1) {
                 const prod = productosActuales.find(p => p.id === id); const stockDisponible = prod ? parseInt(prod.stock) || 0 : 0;
-                if (accion === "sumar") { if (carrito[index].cantidad >= stockDisponible) { alert(`Límite alcanzado.`); } else { carrito[index].cantidad++; } } 
+                if (accion === "sumar") { 
+                    if (carrito[index].cantidad >= stockDisponible) { 
+                        Swal.fire({ title: "Límite alcanzado", text: "No hay más stock disponible de este producto.", icon: "info" }); 
+                    } else { carrito[index].cantidad++; } 
+                } 
                 else if (accion === "restar") { carrito[index].cantidad--; if (carrito[index].cantidad === 0) { carrito.splice(index, 1); } }
                 actualizarInterfazCarrito(); renderizarListaCarrito(); if (carrito.length === 0) { modalCarrito.classList.add("oculto"); }
             }
@@ -490,7 +566,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const tlfCliente = cartTelefonoInput.value.trim();
         const dirCliente = cartDireccionInput.value.trim();
 
-        if (nombreCliente === "" || tlfCliente === "" || dirCliente === "") { alert("Por favor, completa todos tus datos para procesar el pedido."); return; }
+        if (nombreCliente === "" || tlfCliente === "" || dirCliente === "") { 
+            Swal.fire({ title: "Faltan datos", text: "Por favor, completa todos tus datos para procesar el pedido.", icon: "warning" }); 
+            return; 
+        }
 
         const btn = document.getElementById("btn-enviar-whatsapp"); const textoOriginal = btn.innerHTML; btn.innerHTML = "Procesando pedido..."; btn.disabled = true;
 
@@ -524,7 +603,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 totalUSD: total.toFixed(2), totalVES: totalBs, modalidadPago: tipoPago === "credito" ? "A Crédito" : "Contado", estado: "Pendiente", fecha: serverTimestamp()
             });
 
-            // NUEVA LÓGICA AUTOMÁTICA DE INCREMENTO DE DEUDA
             const datosActualizacionCliente = {
                 nombre: nombreCliente, 
                 telefono: tlfLimpio, 
@@ -548,7 +626,9 @@ document.addEventListener("DOMContentLoaded", () => {
             
             window.open(`https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`, "_blank"); 
 
-        } catch (error) { console.error("Error al registrar pedido:", error); alert("Ocurrió un error. Intenta nuevamente."); } 
+        } catch (error) { 
+            Swal.fire({ title: "Error", text: "Ocurrió un error. Intenta nuevamente.", icon: "error" }); 
+        } 
         finally { btn.innerHTML = textoOriginal; btn.disabled = false; }
     });
 
