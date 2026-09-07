@@ -524,9 +524,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 totalUSD: total.toFixed(2), totalVES: totalBs, modalidadPago: tipoPago === "credito" ? "A Crédito" : "Contado", estado: "Pendiente", fecha: serverTimestamp()
             });
 
-            await setDoc(doc(db, "clientes", tlfLimpio), {
-                nombre: nombreCliente, telefono: tlfLimpio, direccion: dirCliente, fechaUltimoPedido: serverTimestamp()
-            }, { merge: true });
+            // NUEVA LÓGICA AUTOMÁTICA DE INCREMENTO DE DEUDA
+            const datosActualizacionCliente = {
+                nombre: nombreCliente, 
+                telefono: tlfLimpio, 
+                direccion: dirCliente, 
+                fechaUltimoPedido: serverTimestamp()
+            };
+
+            if (tipoPago === "credito") {
+                datosActualizacionCliente.deuda = increment(total);
+                datosActualizacionCliente.estado = "Con Deuda";
+            }
+
+            await setDoc(doc(db, "clientes", tlfLimpio), datosActualizacionCliente, { merge: true });
 
             for (const item of carrito) {
                 const productoRef = doc(db, "productos", item.id);
