@@ -3,11 +3,22 @@ import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, doc, del
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import Swal from 'https://cdn.jsdelivr.net/npm/sweetalert2@11/+esm';
 
-// Inyectamos el tema oscuro para las nuevas ventanas elegantes
 const linkTema = document.createElement('link');
 linkTema.rel = 'stylesheet';
 linkTema.href = 'https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5/dark.css';
 document.head.appendChild(linkTema);
+
+const fixSwal = document.createElement('style');
+fixSwal.innerHTML = `
+    .swal2-popup .swal2-input {
+        width: 80% !important;
+        margin: 1.5em auto !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        text-align: center !important;
+    }
+`;
+document.head.appendChild(fixSwal);
 
 const firebaseConfig = {
   apiKey: "AIzaSyAk9ReIO8iVHADCVEa75mREhj1T8vt6Kvc",
