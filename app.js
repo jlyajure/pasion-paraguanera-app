@@ -172,7 +172,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // CORRECCIÓN MATEMÁTICA DEL NAVEGADOR
     gasProducto.addEventListener("change", () => {
         if(gasProducto.value === "ninguno") {
             gasMontoCantidad.placeholder = "Monto del gasto en $";
@@ -237,12 +236,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
             Swal.fire({ title: "Gasto Registrado", text: `Se contabilizaron $${totalUSD.toFixed(2)} como gasto/merma.`, icon: "success" });
             formGasto.reset();
-            // Restauramos los valores por defecto al guardar
             gasMontoCantidad.placeholder = "Monto del gasto en $";
             gasMontoCantidad.step = "0.01";
             gasMontoCantidad.min = "0.01";
         } catch (error) {
-            Swal.fire({ title: "Error", text: "Ocurrió un problema al guardar.", icon: "error" });
+            console.error(error);
+            Swal.fire({ 
+                title: "Error de Conexión", 
+                text: "Motivo: " + error.message, 
+                icon: "error" 
+            });
         } finally {
             btnGuardarGas.disabled = false;
             btnGuardarGas.textContent = "Registrar Gasto";
@@ -277,7 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             Swal.fire('Anulado', 'Gasto borrado de la lista.', 'success');
                         }
                     } catch (err) {
-                        Swal.fire('Error', 'No se pudo anular.', 'error');
+                        Swal.fire('Error', 'No se pudo anular: ' + err.message, 'error');
                     }
                 }
             });
@@ -481,7 +484,10 @@ document.addEventListener("DOMContentLoaded", () => {
             else { datosProducto.fechaCreacion = serverTimestamp(); await addDoc(collection(db, "productos"), datosProducto); btnGuardarProd.textContent = "¡Guardado!"; }
             formProducto.reset(); document.getElementById("prod-stock").value = "0"; btnGuardarProd.disabled = false; btnGuardarProd.style.backgroundColor = "#4caf50"; 
             setTimeout(() => { btnGuardarProd.style.backgroundColor = "#e63946"; btnGuardarProd.textContent = "Guardar Producto"; }, 2500);
-        } catch (error) { btnGuardarProd.disabled = false; btnGuardarProd.textContent = "Error"; setTimeout(() => { btnGuardarProd.textContent = textoOriginal; }, 3000); }
+        } catch (error) { 
+            btnGuardarProd.disabled = false; btnGuardarProd.textContent = "Error"; setTimeout(() => { btnGuardarProd.textContent = textoOriginal; }, 3000); 
+            Swal.fire({ title: "Error", text: "Motivo: " + error.message, icon: "error" });
+        }
     });
 
     listaProductosDiv.addEventListener("click", (e) => {
@@ -497,7 +503,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 cancelButtonText: 'Cancelar'
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    await deleteDoc(doc(db, "productos", e.target.closest(".btn-eliminar").getAttribute("data-id")));
+                    try {
+                        await deleteDoc(doc(db, "productos", e.target.closest(".btn-eliminar").getAttribute("data-id")));
+                    } catch (error) {
+                        Swal.fire({ title: "Error", text: error.message, icon: "error" });
+                    }
                 }
             });
         }
@@ -606,7 +616,10 @@ document.addEventListener("DOMContentLoaded", () => {
             else { datosCliente.fechaRegistro = serverTimestamp(); await setDoc(doc(db, "clientes", tlf), datosCliente, { merge: true }); btnGuardarCli.textContent = "¡Registrado!"; }
             formCliente.reset(); document.getElementById("cli-deuda").value = "0"; btnGuardarCli.disabled = false; btnGuardarCli.style.backgroundColor = "#4caf50"; 
             setTimeout(() => { btnGuardarCli.textContent = "Registrar Cliente"; }, 2500);
-        } catch (error) { btnGuardarCli.disabled = false; btnGuardarCli.textContent = "Error"; setTimeout(() => { btnGuardarCli.textContent = textoOriginal; }, 3000); }
+        } catch (error) { 
+            btnGuardarCli.disabled = false; btnGuardarCli.textContent = "Error"; setTimeout(() => { btnGuardarCli.textContent = textoOriginal; }, 3000); 
+            Swal.fire({ title: "Error", text: "Motivo: " + error.message, icon: "error" });
+        }
     });
 
     listaClientesDiv.addEventListener("click", (e) => {
@@ -622,7 +635,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 cancelButtonText: 'Cancelar'
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    await deleteDoc(doc(db, "clientes", e.target.closest(".btn-eliminar-cli").getAttribute("data-id")));
+                    try {
+                        await deleteDoc(doc(db, "clientes", e.target.closest(".btn-eliminar-cli").getAttribute("data-id")));
+                    } catch (error) {
+                        Swal.fire({ title: "Error", text: error.message, icon: "error" });
+                    }
                 }
             });
         }
@@ -686,7 +703,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 btn.textContent = "Procesando...";
                                 await updateDoc(doc(db, "clientes", id), { deuda: nuevaDeuda, estado: nuevoEstado });
                             } catch (error) {
-                                Swal.fire({ title: "Error", text: "Ocurrió un error al registrar el abono.", icon: "error" });
+                                Swal.fire({ title: "Error", text: "Motivo: " + error.message, icon: "error" });
                             }
                         } else {
                             Swal.fire({ title: "Monto inválido", text: "Por favor ingresa un monto mayor a 0.", icon: "warning" });
@@ -752,7 +769,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 cancelButtonText: 'Cancelar'
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    await deleteDoc(doc(db, "pedidos", e.target.closest(".btn-eliminar-ped").getAttribute("data-id")));
+                    try {
+                        await deleteDoc(doc(db, "pedidos", e.target.closest(".btn-eliminar-ped").getAttribute("data-id")));
+                    } catch (error) {
+                        Swal.fire({ title: "Error", text: error.message, icon: "error" });
+                    }
                 }
             });
         }
@@ -967,7 +988,7 @@ document.addEventListener("DOMContentLoaded", () => {
             window.open(`https://wa.me/${NUMERO_WHATSAPP}?text=${mensaje}`, "_blank"); 
 
         } catch (error) { 
-            Swal.fire({ title: "Error", text: "Ocurrió un error. Intenta nuevamente.", icon: "error" }); 
+            Swal.fire({ title: "Error", text: "Motivo: " + error.message, icon: "error" }); 
         } 
         finally { btn.innerHTML = textoOriginal; btn.disabled = false; }
     });
