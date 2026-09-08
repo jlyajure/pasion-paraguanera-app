@@ -99,7 +99,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnVolverAdminPed = document.getElementById("btn-volver-admin-ped");
     const listaPedidosDiv = document.getElementById("lista-pedidos");
 
-    // ===== INYECCIÓN DEL MÓDULO DE GASTOS CORREGIDA =====
     let btnGastos = document.getElementById("btn-gastos");
     if (!btnGastos && btnPedidos) {
         btnGastos = document.createElement("button");
@@ -107,7 +106,6 @@ document.addEventListener("DOMContentLoaded", () => {
         btnGastos.className = btnPedidos.className; 
         btnGastos.style.cssText = "background-color: #e91e63; color: white; padding: 15px; margin-top: 10px; margin-bottom: 10px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;";
         btnGastos.innerHTML = "📉 Gastos e Inventario Interno";
-        // Lo insertamos justo debajo del botón de Pedidos
         btnPedidos.parentNode.insertBefore(btnGastos, btnPedidos.nextSibling);
     }
 
@@ -146,7 +144,6 @@ document.addEventListener("DOMContentLoaded", () => {
             <div id="lista-gastos" style="display: flex; flex-direction: column; gap: 10px;"></div>
         `;
         
-        // CORRECCIÓN: Insertarlo al mismo nivel que moduloPedidos, FUERA de vistaAdmin
         if (moduloPedidos) {
             moduloPedidos.parentNode.insertBefore(moduloGastos, moduloPedidos.nextSibling);
         } else {
@@ -175,13 +172,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // CORRECCIÓN MATEMÁTICA DEL NAVEGADOR
     gasProducto.addEventListener("change", () => {
         if(gasProducto.value === "ninguno") {
             gasMontoCantidad.placeholder = "Monto del gasto en $";
             gasMontoCantidad.step = "0.01";
+            gasMontoCantidad.min = "0.01";
         } else {
             gasMontoCantidad.placeholder = "Cantidad a restar del inventario (Unidades)";
             gasMontoCantidad.step = "1";
+            gasMontoCantidad.min = "1";
         }
         gasMontoCantidad.value = "";
     });
@@ -237,8 +237,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             Swal.fire({ title: "Gasto Registrado", text: `Se contabilizaron $${totalUSD.toFixed(2)} como gasto/merma.`, icon: "success" });
             formGasto.reset();
+            // Restauramos los valores por defecto al guardar
             gasMontoCantidad.placeholder = "Monto del gasto en $";
             gasMontoCantidad.step = "0.01";
+            gasMontoCantidad.min = "0.01";
         } catch (error) {
             Swal.fire({ title: "Error", text: "Ocurrió un problema al guardar.", icon: "error" });
         } finally {
@@ -323,7 +325,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("total-gas-usd").textContent = "$" + totalUSDGastos.toFixed(2);
         document.getElementById("total-gas-bs").textContent = (totalUSDGastos * tasaBCV).toFixed(2);
     }
-    // ===== FIN DEL MÓDULO =====
 
     const cartNombreInput = document.getElementById("cart-nombre");
     const cartTelefonoInput = document.getElementById("cart-telefono");
