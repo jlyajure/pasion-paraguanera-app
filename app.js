@@ -40,13 +40,13 @@ let clienteEnEdicionId = null;
 let productosActuales = []; 
 let clientesActuales = [];
 let pedidosActuales = [];
-let gastosActuales = []; // Nueva variable para gastos
+let gastosActuales = []; 
 let carrito = []; 
 let tasaBCV = 1;
 
 let unsubClientes = null;
 let unsubPedidos = null;
-let unsubGastos = null; // Nuevo suscriptor
+let unsubGastos = null; 
 
 function formatearTelefono(tlf) {
     let limpio = tlf.replace(/\D/g, '');
@@ -99,14 +99,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnVolverAdminPed = document.getElementById("btn-volver-admin-ped");
     const listaPedidosDiv = document.getElementById("lista-pedidos");
 
-    // ===== INYECCIÓN DEL MÓDULO DE GASTOS =====
+    // ===== INYECCIÓN DEL MÓDULO DE GASTOS CORREGIDA =====
     let btnGastos = document.getElementById("btn-gastos");
     if (!btnGastos && btnPedidos) {
         btnGastos = document.createElement("button");
         btnGastos.id = "btn-gastos";
         btnGastos.className = btnPedidos.className; 
-        btnGastos.style.cssText = "background-color: #e91e63; color: white; padding: 15px; margin-bottom: 10px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;";
+        btnGastos.style.cssText = "background-color: #e91e63; color: white; padding: 15px; margin-top: 10px; margin-bottom: 10px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;";
         btnGastos.innerHTML = "📉 Gastos e Inventario Interno";
+        // Lo insertamos justo debajo del botón de Pedidos
         btnPedidos.parentNode.insertBefore(btnGastos, btnPedidos.nextSibling);
     }
 
@@ -117,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
         moduloGastos.classList.add("oculto");
         moduloGastos.innerHTML = `
             <div style="text-align: left; margin-bottom: 20px;">
-                <button id="btn-volver-admin-gas" style="background-color: #555; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">⬅ Volver al Panel</button>
+                <button id="btn-volver-admin-gas" style="background-color: #555; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">⬅ Volver al Panel</button>
             </div>
             <h2 style="text-align: center; color: #e91e63; margin-bottom: 10px;">📉 Gastos y Retiros Internos</h2>
             <p style="text-align: center; font-size: 13px; color: #aaa; margin-bottom: 20px;">Registra salidas de dinero o resta mercancía por consumo/daños del negocio.</p>
@@ -144,8 +145,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             <div id="lista-gastos" style="display: flex; flex-direction: column; gap: 10px;"></div>
         `;
-        if(btnPedidos && btnPedidos.parentNode.parentNode) {
-            btnPedidos.parentNode.parentNode.appendChild(moduloGastos);
+        
+        // CORRECCIÓN: Insertarlo al mismo nivel que moduloPedidos, FUERA de vistaAdmin
+        if (moduloPedidos) {
+            moduloPedidos.parentNode.insertBefore(moduloGastos, moduloPedidos.nextSibling);
         } else {
             vistaAdmin.parentNode.appendChild(moduloGastos);
         }
@@ -162,6 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnGastos.addEventListener("click", () => { 
             vistaAdmin.classList.add("oculto"); 
             moduloGastos.classList.remove("oculto"); 
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     }
     if (btnVolverAdminGas) {
@@ -449,19 +453,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    btnInventario.addEventListener("click", () => { vistaAdmin.classList.add("oculto"); moduloInventario.classList.remove("oculto"); });
+    btnInventario.addEventListener("click", () => { vistaAdmin.classList.add("oculto"); moduloInventario.classList.remove("oculto"); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     btnVolverAdminInv.addEventListener("click", () => {
         moduloInventario.classList.add("oculto"); vistaAdmin.classList.remove("oculto");
         if(productoEnEdicionId) { formProducto.reset(); document.getElementById("prod-stock").value = "0"; productoEnEdicionId = null; btnGuardarProd.textContent = "Guardar Producto"; btnGuardarProd.style.backgroundColor = "#e63946"; }
     });
 
-    btnClientes.addEventListener("click", () => { vistaAdmin.classList.add("oculto"); moduloClientes.classList.remove("oculto"); });
+    btnClientes.addEventListener("click", () => { vistaAdmin.classList.add("oculto"); moduloClientes.classList.remove("oculto"); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     btnVolverAdminCli.addEventListener("click", () => {
         moduloClientes.classList.add("oculto"); vistaAdmin.classList.remove("oculto");
         if(clienteEnEdicionId) { formCliente.reset(); document.getElementById("cli-deuda").value = "0"; clienteEnEdicionId = null; btnGuardarCli.textContent = "Registrar Cliente"; btnGuardarCli.style.backgroundColor = "#4caf50"; }
     });
 
-    btnPedidos.addEventListener("click", () => { vistaAdmin.classList.add("oculto"); moduloPedidos.classList.remove("oculto"); });
+    btnPedidos.addEventListener("click", () => { vistaAdmin.classList.add("oculto"); moduloPedidos.classList.remove("oculto"); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     btnVolverAdminPed.addEventListener("click", () => { moduloPedidos.classList.add("oculto"); vistaAdmin.classList.remove("oculto"); });
 
     formProducto.addEventListener("submit", async (e) => {
