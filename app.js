@@ -40,11 +40,13 @@ let clienteEnEdicionId = null;
 let productosActuales = []; 
 let clientesActuales = [];
 let pedidosActuales = [];
+let gastosActuales = []; // Nueva variable para gastos
 let carrito = []; 
 let tasaBCV = 1;
 
 let unsubClientes = null;
 let unsubPedidos = null;
+let unsubGastos = null; // Nuevo suscriptor
 
 function formatearTelefono(tlf) {
     let limpio = tlf.replace(/\D/g, '');
@@ -96,6 +98,228 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnPedidos = document.getElementById("btn-pedidos");
     const btnVolverAdminPed = document.getElementById("btn-volver-admin-ped");
     const listaPedidosDiv = document.getElementById("lista-pedidos");
+
+    // ===== INYECCIÓN DEL MÓDULO DE GASTOS =====
+    let btnGastos = document.getElementById("btn-gastos");
+    if (!btnGastos && btnPedidos) {
+        btnGastos = document.createElement("button");
+        btnGastos.id = "btn-gastos";
+        btnGastos.className = btnPedidos.className; 
+        btnGastos.style.cssText = "background-color: #e91e63; color: white; padding: 15px; margin-bottom: 10px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;";
+        btnGastos.innerHTML = "📉 Gastos e Inventario Interno";
+        btnPedidos.parentNode.insertBefore(btnGastos, btnPedidos.nextSibling);
+    }
+
+    let moduloGastos = document.getElementById("modulo-gastos");
+    if (!moduloGastos) {
+        moduloGastos = document.createElement("div");
+        moduloGastos.id = "modulo-gastos";
+        moduloGastos.classList.add("oculto");
+        moduloGastos.innerHTML = `
+            <div style="text-align: left; margin-bottom: 20px;">
+                <button id="btn-volver-admin-gas" style="background-color: #555; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">⬅ Volver al Panel</button>
+            </div>
+            <h2 style="text-align: center; color: #e91e63; margin-bottom: 10px;">📉 Gastos y Retiros Internos</h2>
+            <p style="text-align: center; font-size: 13px; color: #aaa; margin-bottom: 20px;">Registra salidas de dinero o resta mercancía por consumo/daños del negocio.</p>
+            
+            <div style="background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333;">
+                <form id="form-gasto" style="display: flex; flex-direction: column; gap: 10px;">
+                    <input type="text" id="gas-concepto" placeholder="Motivo (Ej: Limpieza, Uso Local, Dañado...)" required style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
+                    
+                    <select id="gas-producto" required style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
+                        <option value="ninguno">🔴 Gasto Externo (Solo Dinero, No afecta inventario)</option>
+                    </select>
+
+                    <input type="number" id="gas-monto-cantidad" placeholder="Monto del gasto en $" required min="0.01" step="0.01" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
+                    
+                    <button type="submit" id="btn-guardar-gas" style="background-color: #e91e63; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;">Registrar Gasto</button>
+                </form>
+            </div>
+
+            <div id="resumen-total-gastos" style="background-color: #33151d; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; border: 1px solid #e91e63;">
+                <h3 style="margin: 0 0 5px 0; color: #ff80ab; font-size: 16px;">💰 Total Gastos Generales</h3>
+                <span style="font-size: 22px; color: #fff; font-weight: bold;" id="total-gas-usd">$0.00</span> 
+                <span style="color: #bbb; font-size: 14px;">| Bs. <span id="total-gas-bs">0.00</span></span>
+            </div>
+
+            <div id="lista-gastos" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        `;
+        if(btnPedidos && btnPedidos.parentNode.parentNode) {
+            btnPedidos.parentNode.parentNode.appendChild(moduloGastos);
+        } else {
+            vistaAdmin.parentNode.appendChild(moduloGastos);
+        }
+    }
+
+    const btnVolverAdminGas = document.getElementById("btn-volver-admin-gas");
+    const formGasto = document.getElementById("form-gasto");
+    const gasProducto = document.getElementById("gas-producto");
+    const gasMontoCantidad = document.getElementById("gas-monto-cantidad");
+    const btnGuardarGas = document.getElementById("btn-guardar-gas");
+    const listaGastosDiv = document.getElementById("lista-gastos");
+
+    if (btnGastos) {
+        btnGastos.addEventListener("click", () => { 
+            vistaAdmin.classList.add("oculto"); 
+            moduloGastos.classList.remove("oculto"); 
+        });
+    }
+    if (btnVolverAdminGas) {
+        btnVolverAdminGas.addEventListener("click", () => { 
+            moduloGastos.classList.add("oculto"); 
+            vistaAdmin.classList.remove("oculto"); 
+        });
+    }
+
+    gasProducto.addEventListener("change", () => {
+        if(gasProducto.value === "ninguno") {
+            gasMontoCantidad.placeholder = "Monto del gasto en $";
+            gasMontoCantidad.step = "0.01";
+        } else {
+            gasMontoCantidad.placeholder = "Cantidad a restar del inventario (Unidades)";
+            gasMontoCantidad.step = "1";
+        }
+        gasMontoCantidad.value = "";
+    });
+
+    formGasto.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        btnGuardarGas.disabled = true;
+        btnGuardarGas.textContent = "Procesando...";
+
+        const concepto = document.getElementById("gas-concepto").value.trim();
+        const productoId = gasProducto.value;
+        const valorInput = parseFloat(gasMontoCantidad.value);
+
+        try {
+            let totalUSD = 0;
+
+            if (productoId === "ninguno") {
+                totalUSD = valorInput;
+                await addDoc(collection(db, "gastos"), {
+                    concepto: concepto,
+                    tipo: "Externo",
+                    totalUSD: totalUSD,
+                    fecha: serverTimestamp()
+                });
+            } else {
+                const prod = productosActuales.find(p => p.id === productoId);
+                const cantidad = Math.floor(valorInput);
+                const stockDisponible = parseInt(prod.stock) || 0;
+
+                if (cantidad > stockDisponible) {
+                    Swal.fire({ title: "Stock insuficiente", text: `Solo quedan ${stockDisponible} unidades de ${prod.nombre}.`, icon: "warning" });
+                    btnGuardarGas.disabled = false;
+                    btnGuardarGas.textContent = "Registrar Gasto";
+                    return;
+                }
+
+                totalUSD = cantidad * parseFloat(prod.precio || 0);
+
+                await addDoc(collection(db, "gastos"), {
+                    concepto: concepto,
+                    tipo: "Retiro de Inventario",
+                    productoId: prod.id,
+                    productoNombre: prod.nombre,
+                    cantidad: cantidad,
+                    totalUSD: totalUSD,
+                    fecha: serverTimestamp()
+                });
+
+                await updateDoc(doc(db, "productos", prod.id), {
+                    stock: increment(-cantidad)
+                });
+            }
+
+            Swal.fire({ title: "Gasto Registrado", text: `Se contabilizaron $${totalUSD.toFixed(2)} como gasto/merma.`, icon: "success" });
+            formGasto.reset();
+            gasMontoCantidad.placeholder = "Monto del gasto en $";
+            gasMontoCantidad.step = "0.01";
+        } catch (error) {
+            Swal.fire({ title: "Error", text: "Ocurrió un problema al guardar.", icon: "error" });
+        } finally {
+            btnGuardarGas.disabled = false;
+            btnGuardarGas.textContent = "Registrar Gasto";
+        }
+    });
+
+    listaGastosDiv.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-eliminar-gas")) {
+            const btn = e.target.closest(".btn-eliminar-gas");
+            const id = btn.getAttribute("data-id");
+            const tipo = btn.getAttribute("data-tipo");
+            const prodId = btn.getAttribute("data-prodid");
+            const cant = parseInt(btn.getAttribute("data-cant")) || 0;
+
+            Swal.fire({
+                title: '¿Anular este registro?',
+                text: tipo === "Retiro de Inventario" ? "Se devolverán los productos al inventario físico." : "Desaparecerá del historial de gastos.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e91e63',
+                cancelButtonColor: '#555',
+                confirmButtonText: 'Sí, anular',
+                cancelButtonText: 'Volver'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        await deleteDoc(doc(db, "gastos", id));
+                        if (tipo === "Retiro de Inventario" && prodId) {
+                            await updateDoc(doc(db, "productos", prodId), { stock: increment(cant) });
+                            Swal.fire('Anulado', 'Registro eliminado y stock devuelto.', 'success');
+                        } else {
+                            Swal.fire('Anulado', 'Gasto borrado de la lista.', 'success');
+                        }
+                    } catch (err) {
+                        Swal.fire('Error', 'No se pudo anular.', 'error');
+                    }
+                }
+            });
+        }
+    });
+
+    function renderizarGastos() {
+        if(!listaGastosDiv) return;
+        listaGastosDiv.innerHTML = "";
+        let totalUSDGastos = 0;
+
+        if (gastosActuales.length === 0) {
+            listaGastosDiv.innerHTML = "<p style='text-align:center; color:#aaa; font-size:14px;'>No hay gastos registrados aún.</p>";
+            document.getElementById("total-gas-usd").textContent = "$0.00";
+            document.getElementById("total-gas-bs").textContent = "0.00";
+            return;
+        }
+
+        gastosActuales.forEach(gasto => {
+            const totalUSD = parseFloat(gasto.totalUSD || 0);
+            totalUSDGastos += totalUSD;
+            const fechaStr = gasto.fecha ? new Date(gasto.fecha.toMillis()).toLocaleString() : "Fecha desconocida";
+            
+            const div = document.createElement("div");
+            div.style.cssText = "background-color: #222; padding: 12px; border-radius: 6px; border-left: 4px solid #e91e63; margin-bottom: 8px;";
+            
+            let badgeTipo = gasto.tipo === "Externo" 
+                ? `<span style="background: #555; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Gasto Externo/Efectivo</span>`
+                : `<span style="background: #e91e63; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Uso Inventario: ${gasto.cantidad}x ${gasto.productoNombre}</span>`;
+
+            div.innerHTML = `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <strong style="color: white; font-size: 15px;">${gasto.concepto}</strong>
+                    <button class="btn-eliminar-gas" data-id="${gasto.id}" data-tipo="${gasto.tipo}" data-prodid="${gasto.productoId}" data-cant="${gasto.cantidad}" style="background: none; border: none; cursor: pointer; font-size: 18px;">🗑️</button>
+                </div>
+                <div style="margin-bottom: 8px;">${badgeTipo}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; color: #bbb; font-size: 12px;">
+                    <span>${fechaStr}</span>
+                    <strong style="color: #ff80ab; font-size: 15px;">-$${totalUSD.toFixed(2)}</strong>
+                </div>
+            `;
+            listaGastosDiv.appendChild(div);
+        });
+
+        document.getElementById("total-gas-usd").textContent = "$" + totalUSDGastos.toFixed(2);
+        document.getElementById("total-gas-bs").textContent = (totalUSDGastos * tasaBCV).toFixed(2);
+    }
+    // ===== FIN DEL MÓDULO =====
 
     const cartNombreInput = document.getElementById("cart-nombre");
     const cartTelefonoInput = document.getElementById("cart-telefono");
@@ -202,14 +426,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 renderizarPedidos();
             });
 
+            unsubGastos = onSnapshot(collection(db, "gastos"), (snapshot) => {
+                gastosActuales = [];
+                snapshot.forEach((doc) => { gastosActuales.push({ id: doc.id, ...doc.data() }); });
+                gastosActuales.sort((a, b) => {
+                    const timeA = a.fecha ? a.fecha.toMillis() : 0; const timeB = b.fecha ? b.fecha.toMillis() : 0;
+                    return timeB - timeA;
+                });
+                renderizarGastos();
+            });
+
         } else {
             vistaAdmin.classList.add("oculto");
             moduloInventario.classList.add("oculto"); moduloClientes.classList.add("oculto"); moduloPedidos.classList.add("oculto");
+            if (moduloGastos) moduloGastos.classList.add("oculto");
             vistaCliente.classList.remove("oculto");
             actualizarInterfazCarrito(); 
             
             if(unsubClientes) unsubClientes();
             if(unsubPedidos) unsubPedidos();
+            if(unsubGastos) unsubGastos();
         }
     });
 
@@ -292,7 +528,6 @@ document.addEventListener("DOMContentLoaded", () => {
             listaProductosDiv.innerHTML = "<p>No hay productos registrados aún.</p>";
             divResumen.style.display = "none";
             if (catalogoPublico) catalogoPublico.innerHTML = "<p style='text-align:center; width:100%; color:#aaa;'>El catálogo está vacío por ahora.</p>"; 
-            return;
         } else {
             divResumen.style.display = "block";
         }
@@ -337,6 +572,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const totalBs = (valorTotalInversion * tasaBCV).toFixed(2);
         divResumen.innerHTML = `<h3 style="margin: 0 0 5px 0; color: #81c784; font-size: 16px;">💰 Capital Total en Inventario</h3><span style="font-size: 22px; color: #fff; font-weight: bold;">$${valorTotalInversion.toFixed(2)}</span> <span style="color: #bbb; font-size: 14px;">| Bs. ${totalBs}</span>`;
+
+        if (gasProducto) {
+            const valorAnterior = gasProducto.value;
+            gasProducto.innerHTML = `<option value="ninguno">🔴 Gasto Externo (Solo Dinero, No afecta inventario)</option>`;
+            productosActuales.forEach(p => {
+                if(parseInt(p.stock) > 0) {
+                    gasProducto.innerHTML += `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`;
+                }
+            });
+            if(Array.from(gasProducto.options).some(opt => opt.value === valorAnterior)) {
+                gasProducto.value = valorAnterior;
+            }
+        }
 
         actualizarInterfazCarrito(); renderizarListaCarrito();
     }
