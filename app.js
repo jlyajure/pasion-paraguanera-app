@@ -506,19 +506,95 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function renderizarPedidos() {
-        pedidosActuales.forEach((pedido) => {
-            const estado = pedido.estado || "Pendiente"; const fechaStr = pedido.fecha ? new Date(pedido.fecha.toMillis()).toLocaleString() : "Fecha desconocida"; const dirPed = pedido.direccion || "Sin dirección";
-            let colorClase = estado === "Pendiente" ? "" : estado === "Completado" ? "completado" : "cancelado";
-            let etiqueta = estado === "Pendiente" ? "🟡 Pendiente" : estado === "Completado" ? "🟢 Completado" : "🔴 Cancelado";
+        let divFiltros = document.getElementById("contenedor-filtros-pedidos");
+        if (!divFiltros) {
+            divFiltros = document.createElement("div");
+            divFiltros.id = "contenedor-filtros-pedidos";
+            divFiltros.style.cssText = "background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333; display: flex; flex-direction: column; gap: 10px;";
+            divFiltros.innerHTML = `
+                <div style="display: flex; gap: 10px; justify-content: space-between;">
+                    <select id="filtro-mes" style="width: 48%; padding: 8px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 14px;">
+                        <option value="todos">Todos los meses</option>
+                        <option value="1">Enero</option>
+                        <option value="2">Febrero</option>
+                        <option value="3">Marzo</option>
+                        <option value="4">Abril</option>
+                        <option value="5">Mayo</option>
+                        <option value="6">Junio</option>
+                        <option value="7">Julio</option>
+                        <option value="8">Agosto</option>
+                        <option value="9">Septiembre</option>
+                        <option value="10">Octubre</option>
+                        <option value="11">Noviembre</option>
+                        <option value="12">Diciembre</option>
+                    </select>
+                    <select id="filtro-anio" style="width: 48%; padding: 8px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 14px;">
+                        <option value="todos">Todos los años</option>
+                        <option value="2026">2026</option>
+                        <option value="2027">2027</option>
+                        <option value="2028">2028</option>
+                    </select>
+                </div>
+                <div style="text-align: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">
+                    <span style="color: #bbb; font-size: 13px;">Ventas del periodo (sin Cancelados):</span><br>
+                    <span style="font-size: 22px; color: #81c784; font-weight: bold;" id="total-filtro-usd">$0.00</span> 
+                    <span style="color: #bbb; font-size: 14px;">| Bs. <span id="total-filtro-bs">0.00</span></span>
+                </div>
+            `;
+            listaPedidosDiv.parentNode.insertBefore(divFiltros, listaPedidosDiv);
             
-            let etiquetaModalidad = pedido.modalidadPago === "A Crédito" ? `<span style="background-color: #ff9800; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px;">A CRÉDITO</span>` : `<span style="background-color: #4caf50; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px;">CONTADO</span>`;
+            document.getElementById("filtro-mes").addEventListener("change", renderizarPedidos);
+            document.getElementById("filtro-anio").addEventListener("change", renderizarPedidos);
+        }
 
-            let listaItems = ""; if (pedido.productos && Array.isArray(pedido.productos)) { pedido.productos.forEach(p => { listaItems += `<li>${p.cantidad}x ${p.nombre} ($${p.precio})</li>`; }); }
+        const mesSel = document.getElementById("filtro-mes").value;
+        const anioSel = document.getElementById("filtro-anio").value;
 
-            const divPed = document.createElement("div"); divPed.className = `tarjeta-pedido ${colorClase}`;
-            divPed.innerHTML = `<div class="pedido-header"><h4>👤 ${pedido.cliente}</h4><span class="estado-badge">${etiqueta}</span></div><div class="pedido-cuerpo"><p>📞 WhatsApp: ${pedido.telefono}</p><p>📍 Dirección: ${dirPed}</p><p>🕒 Fecha: ${fechaStr}</p><p>💳 Modalidad: ${etiquetaModalidad}</p><ul>${listaItems}</ul><div class="totales">Total: $${parseFloat(pedido.totalUSD).toFixed(2)} | Bs. ${parseFloat(pedido.totalVES).toFixed(2)}</div></div><div class="pedido-acciones"><button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Completado" style="background-color: #4caf50;">✔️ Listo</button><button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Pendiente" style="background-color: #ff9800; color: #000;">🟡 Pdte</button><button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Cancelado" style="background-color: #f44336;">❌ Canc</button><button class="btn-eliminar-ped" data-id="${pedido.id}" style="background-color: #333;">🗑️ Borrar</button></div>`;
-            listaPedidosDiv.appendChild(divPed);
+        let totalUSDPeriodo = 0;
+        listaPedidosDiv.innerHTML = "";
+
+        const pedidosFiltrados = pedidosActuales.filter(pedido => {
+            if (!pedido.fecha) return mesSel === "todos" && anioSel === "todos";
+            const fechaObj = new Date(pedido.fecha.toMillis());
+            const mesPedido = (fechaObj.getMonth() + 1).toString();
+            const anioPedido = fechaObj.getFullYear().toString();
+            
+            const pasaMes = (mesSel === "todos" || mesSel === mesPedido);
+            const pasaAnio = (anioSel === "todos" || anioSel === anioPedido);
+            
+            return pasaMes && pasaAnio;
         });
+
+        if (pedidosFiltrados.length === 0) {
+            listaPedidosDiv.innerHTML = "<p style='text-align:center; color:#aaa; font-size:14px;'>No hay pedidos registrados para esta fecha.</p>";
+        } else {
+            pedidosFiltrados.forEach((pedido) => {
+                const estado = pedido.estado || "Pendiente"; 
+                const fechaStr = pedido.fecha ? new Date(pedido.fecha.toMillis()).toLocaleString() : "Fecha desconocida"; 
+                const dirPed = pedido.direccion || "Sin dirección";
+                
+                let colorClase = estado === "Pendiente" ? "" : estado === "Completado" ? "completado" : "cancelado";
+                let etiqueta = estado === "Pendiente" ? "🟡 Pendiente" : estado === "Completado" ? "🟢 Completado" : "🔴 Cancelado";
+                
+                let etiquetaModalidad = pedido.modalidadPago === "A Crédito" ? `<span style="background-color: #ff9800; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px;">A CRÉDITO</span>` : `<span style="background-color: #4caf50; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px;">CONTADO</span>`;
+
+                let listaItems = ""; 
+                if (pedido.productos && Array.isArray(pedido.productos)) { 
+                    pedido.productos.forEach(p => { listaItems += `<li>${p.cantidad}x ${p.nombre} ($${p.precio})</li>`; }); 
+                }
+
+                if (estado !== "Cancelado") {
+                    totalUSDPeriodo += parseFloat(pedido.totalUSD || 0);
+                }
+
+                const divPed = document.createElement("div"); divPed.className = `tarjeta-pedido ${colorClase}`;
+                divPed.innerHTML = `<div class="pedido-header"><h4>👤 ${pedido.cliente}</h4><span class="estado-badge">${etiqueta}</span></div><div class="pedido-cuerpo"><p>📞 WhatsApp: ${pedido.telefono}</p><p>📍 Dirección: ${dirPed}</p><p>🕒 Fecha: ${fechaStr}</p><p>💳 Modalidad: ${etiquetaModalidad}</p><ul>${listaItems}</ul><div class="totales">Total: $${parseFloat(pedido.totalUSD).toFixed(2)} | Bs. ${parseFloat(pedido.totalVES).toFixed(2)}</div></div><div class="pedido-acciones"><button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Completado" style="background-color: #4caf50;">✔️ Listo</button><button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Pendiente" style="background-color: #ff9800; color: #000;">🟡 Pdte</button><button class="btn-estado-ped" data-id="${pedido.id}" data-estado="Cancelado" style="background-color: #f44336;">❌ Canc</button><button class="btn-eliminar-ped" data-id="${pedido.id}" style="background-color: #333;">🗑️ Borrar</button></div>`;
+                listaPedidosDiv.appendChild(divPed);
+            });
+        }
+
+        document.getElementById("total-filtro-usd").textContent = "$" + totalUSDPeriodo.toFixed(2);
+        document.getElementById("total-filtro-bs").textContent = (totalUSDPeriodo * tasaBCV).toFixed(2);
     }
 
     catalogoPublico.addEventListener("click", (e) => {
