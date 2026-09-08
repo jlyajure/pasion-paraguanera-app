@@ -423,9 +423,9 @@ document.addEventListener("DOMContentLoaded", () => {
                             if (nuevaDeuda <= 0) {
                                 nuevaDeuda = 0;
                                 nuevoEstado = "Al día";
-                                Swal.fire({ title: "¡Deuda saldada!", text: `${cli.nombre} ahora está solvente.`, icon: "success" });
+                                Swal.fire({ title: "¡Deuda saldada!", text: `La cuenta de ${cli.nombre} ahora está solvente.`, icon: "success" });
                             } else {
-                                Swal.fire({ title: "Abono registrado", text: `La nueva deuda es de: $${nuevaDeuda.toFixed(2)}`, icon: "success" });
+                                Swal.fire({ title: "Abono registrado", text: `La nueva deuda de ${cli.nombre} es de: $${nuevaDeuda.toFixed(2)}`, icon: "success" });
                             }
                             
                             try {
