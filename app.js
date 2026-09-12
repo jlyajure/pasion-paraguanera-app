@@ -8,17 +8,35 @@ linkTema.rel = 'stylesheet';
 linkTema.href = 'https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5/dark.css';
 document.head.appendChild(linkTema);
 
+// CORRECCIÓN DEL RECUADRO GRIS Y NUEVO ESTILO TOAST
 const fixSwal = document.createElement('style');
 fixSwal.innerHTML = `
     .swal2-popup .swal2-input {
         width: 80% !important;
         margin: 1.5em auto !important;
         box-sizing: border-box !important;
-        display: block !important;
         text-align: center !important;
+    }
+    .modern-toast {
+        background-color: #222 !important;
+        color: #fff !important;
+        border-left: 5px solid #e91e63 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
     }
 `;
 document.head.appendChild(fixSwal);
+
+// CONFIGURACIÓN DE LA NOTIFICACIÓN MODERNA (TOAST)
+const Toast = Swal.mixin({
+    toast: true,
+    position: 'top',
+    showConfirmButton: false,
+    timer: 3500,
+    timerProgressBar: true,
+    customClass: {
+        popup: 'modern-toast'
+    }
+});
 
 const firebaseConfig = {
   apiKey: "AIzaSyAk9ReIO8iVHADCVEa75mREhj1T8vt6Kvc",
@@ -234,18 +252,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
 
-            Swal.fire({ title: "Gasto Registrado", text: `Se contabilizaron $${totalUSD.toFixed(2)} como gasto/merma.`, icon: "success" });
+            // NOTIFICACIÓN TOAST PARA GASTOS
+            Toast.fire({
+                icon: 'success',
+                title: 'Gasto Registrado',
+                text: `Contabilizado: $${totalUSD.toFixed(2)}`
+            });
+            
             formGasto.reset();
             gasMontoCantidad.placeholder = "Monto del gasto en $";
             gasMontoCantidad.step = "0.01";
             gasMontoCantidad.min = "0.01";
         } catch (error) {
             console.error(error);
-            Swal.fire({ 
-                title: "Error de Conexión", 
-                text: "Motivo: " + error.message, 
-                icon: "error" 
-            });
+            Swal.fire({ title: "Error de Conexión", text: "Motivo: " + error.message, icon: "error" });
         } finally {
             btnGuardarGas.disabled = false;
             btnGuardarGas.textContent = "Registrar Gasto";
@@ -275,9 +295,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         await deleteDoc(doc(db, "gastos", id));
                         if (tipo === "Retiro de Inventario" && prodId) {
                             await updateDoc(doc(db, "productos", prodId), { stock: increment(cant) });
-                            Swal.fire('Anulado', 'Registro eliminado y stock devuelto.', 'success');
+                            Toast.fire({ icon: 'success', title: 'Anulado', text: 'Stock devuelto al inventario.' });
                         } else {
-                            Swal.fire('Anulado', 'Gasto borrado de la lista.', 'success');
+                            Toast.fire({ icon: 'success', title: 'Anulado', text: 'Gasto borrado del historial.' });
                         }
                     } catch (err) {
                         Swal.fire('Error', 'No se pudo anular: ' + err.message, 'error');
@@ -693,9 +713,9 @@ document.addEventListener("DOMContentLoaded", () => {
                             if (nuevaDeuda <= 0) {
                                 nuevaDeuda = 0;
                                 nuevoEstado = "Al día";
-                                Swal.fire({ title: "¡Deuda saldada!", text: `La cuenta de ${cli.nombre} ahora está solvente.`, icon: "success" });
+                                Toast.fire({ icon: 'success', title: '¡Deuda saldada!', text: `${cli.nombre} está solvente.` });
                             } else {
-                                Swal.fire({ title: "Abono registrado", text: `La nueva deuda de ${cli.nombre} es de: $${nuevaDeuda.toFixed(2)}`, icon: "success" });
+                                Toast.fire({ icon: 'success', title: 'Abono registrado', text: `Nueva deuda: $${nuevaDeuda.toFixed(2)}` });
                             }
                             
                             try {
