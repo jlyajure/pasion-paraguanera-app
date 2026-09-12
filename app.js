@@ -8,7 +8,6 @@ linkTema.rel = 'stylesheet';
 linkTema.href = 'https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5/dark.css';
 document.head.appendChild(linkTema);
 
-// CORRECCIÓN DEL RECUADRO GRIS Y NUEVO ESTILO TOAST
 const fixSwal = document.createElement('style');
 fixSwal.innerHTML = `
     .swal2-popup .swal2-input {
@@ -26,7 +25,6 @@ fixSwal.innerHTML = `
 `;
 document.head.appendChild(fixSwal);
 
-// CONFIGURACIÓN DE LA NOTIFICACIÓN MODERNA (TOAST)
 const Toast = Swal.mixin({
     toast: true,
     position: 'top',
@@ -142,23 +140,18 @@ document.addEventListener("DOMContentLoaded", () => {
             <div style="background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333;">
                 <form id="form-gasto" style="display: flex; flex-direction: column; gap: 10px;">
                     <input type="text" id="gas-concepto" placeholder="Motivo (Ej: Limpieza, Uso Local, Dañado...)" required style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
-                    
                     <select id="gas-producto" required style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
                         <option value="ninguno">🔴 Gasto Externo (Solo Dinero, No afecta inventario)</option>
                     </select>
-
                     <input type="number" id="gas-monto-cantidad" placeholder="Monto del gasto en $" required min="0.01" step="0.01" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
-                    
                     <button type="submit" id="btn-guardar-gas" style="background-color: #e91e63; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;">Registrar Gasto</button>
                 </form>
             </div>
-
             <div id="resumen-total-gastos" style="background-color: #33151d; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; border: 1px solid #e91e63;">
                 <h3 style="margin: 0 0 5px 0; color: #ff80ab; font-size: 16px;">💰 Total Gastos Generales</h3>
                 <span style="font-size: 22px; color: #fff; font-weight: bold;" id="total-gas-usd">$0.00</span> 
                 <span style="color: #bbb; font-size: 14px;">| Bs. <span id="total-gas-bs">0.00</span></span>
             </div>
-
             <div id="lista-gastos" style="display: flex; flex-direction: column; gap: 10px;"></div>
         `;
         
@@ -252,7 +245,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
 
-            // NOTIFICACIÓN TOAST PARA GASTOS
             Toast.fire({
                 icon: 'success',
                 title: 'Gasto Registrado',
@@ -432,14 +424,11 @@ document.addEventListener("DOMContentLoaded", () => {
             btnCarritoFlotante.classList.add("oculto"); 
 
             unsubClientes = onSnapshot(collection(db, "clientes"), (snapshot) => {
-                listaClientesDiv.innerHTML = ""; clientesActuales = [];
-                if (snapshot.empty) { 
-                    renderizarClientes();
-                    listaClientesDiv.innerHTML = "<p>No hay clientes registrados aún.</p>"; 
-                    return; 
+                clientesActuales = [];
+                if (!snapshot.empty) { 
+                    snapshot.forEach((doc) => { clientesActuales.push({ id: doc.id, ...doc.data() }); });
+                    clientesActuales.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
                 }
-                snapshot.forEach((doc) => { clientesActuales.push({ id: doc.id, ...doc.data() }); });
-                clientesActuales.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
                 renderizarClientes();
             });
 
@@ -734,7 +723,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // SISTEMA DE RENDERIZADO Y BUSCADOR INTELIGENTE DE CLIENTES
     function renderizarClientes() {
+        listaClientesDiv.innerHTML = "";
+
+        let divBuscador = document.getElementById("contenedor-buscador-cli");
+        if (!divBuscador) {
+            divBuscador = document.createElement("div");
+            divBuscador.id = "contenedor-buscador-cli";
+            divBuscador.style.cssText = "margin-bottom: 15px; width: 100%;";
+            divBuscador.innerHTML = `<input type="text" id="input-buscador-cli" placeholder="🔍 Buscar cliente por nombre o teléfono..." style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #222; color: white; font-size: 15px; box-sizing: border-box;">`;
+            listaClientesDiv.parentNode.insertBefore(divBuscador, listaClientesDiv);
+            
+            document.getElementById("input-buscador-cli").addEventListener("input", renderizarClientes);
+        }
+
         let divResumenDeudas = document.getElementById("resumen-total-deudas");
         if (!divResumenDeudas) {
             divResumenDeudas = document.createElement("div");
@@ -743,13 +746,36 @@ document.addEventListener("DOMContentLoaded", () => {
             listaClientesDiv.parentNode.insertBefore(divResumenDeudas, listaClientesDiv);
         }
 
-        let totalDeudaPendiente = 0;
+        if (clientesActuales.length === 0) {
+            divResumenDeudas.style.display = "none";
+            divBuscador.style.display = "none";
+            listaClientesDiv.innerHTML = "<p style='text-align:center; color:#aaa; width:100%;'>No hay clientes registrados aún.</p>";
+            return;
+        } else {
+            divResumenDeudas.style.display = "block";
+            divBuscador.style.display = "block";
+        }
 
-        clientesActuales.forEach((cli) => {
+        let totalDeudaPendiente = 0;
+        clientesActuales.forEach(cli => {
+            totalDeudaPendiente += parseFloat(cli.deuda || 0);
+        });
+
+        const textoBusqueda = document.getElementById("input-buscador-cli") ? document.getElementById("input-buscador-cli").value.toLowerCase() : "";
+
+        const clientesMostrados = clientesActuales.filter(cli => {
+            const nombre = (cli.nombre || "").toLowerCase();
+            const tlf = (cli.telefono || "").toLowerCase();
+            return nombre.includes(textoBusqueda) || tlf.includes(textoBusqueda);
+        });
+
+        if (clientesMostrados.length === 0) {
+            listaClientesDiv.innerHTML = "<p style='text-align:center; color:#aaa; width:100%;'>No se encontraron resultados para tu búsqueda.</p>";
+        }
+
+        clientesMostrados.forEach((cli) => {
             const nombre = cli.nombre || "Sin nombre"; const telefono = cli.telefono || "Sin número"; const direccion = cli.direccion || "Sin dirección registrada";
             const estado = cli.estado || "Al día"; const deudaNum = parseFloat(cli.deuda || 0);
-            
-            totalDeudaPendiente += deudaNum;
             
             const divCli = document.createElement("div"); divCli.classList.add("item-producto"); divCli.style.borderTopColor = estado === "Con Deuda" ? "#f44336" : "#4caf50";
             let seccionDeuda = estado === "Con Deuda" && deudaNum > 0 ? `<div style="background-color: #421818; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #ff6b6b; font-weight: bold; font-size: 14px;">Deuda: $${deudaNum.toFixed(2)}</span></div>` : `<div style="background-color: #1b3a20; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #81c784; font-weight: bold; font-size: 14px;">Cliente Solvente</span></div>`;
@@ -765,12 +791,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const totalDeudaBs = (totalDeudaPendiente * tasaBCV).toFixed(2);
         divResumenDeudas.innerHTML = `<h3 style="margin: 0 0 5px 0; color: #ff6b6b; font-size: 16px;">📕 Total Cuentas por Cobrar (Deudas)</h3><span style="font-size: 22px; color: #fff; font-weight: bold;">$${totalDeudaPendiente.toFixed(2)}</span> <span style="color: #bbb; font-size: 14px;">| Bs. ${totalDeudaBs}</span>`;
-
-        if (clientesActuales.length === 0) {
-            divResumenDeudas.style.display = "none";
-        } else {
-            divResumenDeudas.style.display = "block";
-        }
     }
 
     listaPedidosDiv.addEventListener("click", (e) => {
