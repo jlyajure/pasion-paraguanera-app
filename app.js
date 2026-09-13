@@ -631,7 +631,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ¡AQUÍ ESTÁ LA MAGIA PARA REGRESAR EL RECIBO GRANDE!
+    // ¡SISTEMA DE RECIBOS DE ABONOS RESTAURADO!
     listaClientesDiv.addEventListener("click", (e) => {
         if (e.target.closest(".btn-eliminar-cli")) { 
             Swal.fire({
@@ -703,7 +703,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             if (nuevaDeuda <= 0) {
                                 nuevaDeuda = 0;
                                 nuevoEstado = "Al día";
-                                // Revertido al Pop-up grande para screenshot
+                                // Recibo grande para screenshot
                                 Swal.fire({ 
                                     icon: 'success', 
                                     title: '¡Deuda saldada!', 
@@ -711,7 +711,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     confirmButtonColor: '#673ab7'
                                 });
                             } else {
-                                // Revertido al Pop-up grande para screenshot
+                                // Recibo grande para screenshot
                                 Swal.fire({ 
                                     icon: 'success', 
                                     title: 'Abono registrado', 
@@ -838,6 +838,9 @@ document.addEventListener("DOMContentLoaded", () => {
             divFiltros.id = "contenedor-filtros-pedidos";
             divFiltros.style.cssText = "background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333; display: flex; flex-direction: column; gap: 10px;";
             divFiltros.innerHTML = `
+                <div style="width: 100%;">
+                    <input type="text" id="input-buscador-ped" placeholder="🔍 Buscar factura por cliente o teléfono..." style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #222; color: white; font-size: 15px; box-sizing: border-box;">
+                </div>
                 <div style="display: flex; gap: 10px; justify-content: space-between;">
                     <select id="filtro-mes" style="width: 48%; padding: 8px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 14px;">
                         <option value="todos">Todos los meses</option>
@@ -871,16 +874,25 @@ document.addEventListener("DOMContentLoaded", () => {
             
             document.getElementById("filtro-mes").addEventListener("change", renderizarPedidos);
             document.getElementById("filtro-anio").addEventListener("change", renderizarPedidos);
+            document.getElementById("input-buscador-ped").addEventListener("input", renderizarPedidos);
         }
 
         const mesSel = document.getElementById("filtro-mes").value;
         const anioSel = document.getElementById("filtro-anio").value;
+        const textoBusqueda = document.getElementById("input-buscador-ped") ? document.getElementById("input-buscador-ped").value.toLowerCase() : "";
 
         let totalUSDPeriodo = 0;
         listaPedidosDiv.innerHTML = "";
 
         const pedidosFiltrados = pedidosActuales.filter(pedido => {
-            if (!pedido.fecha) return mesSel === "todos" && anioSel === "todos";
+            const nombreCliente = (pedido.cliente || "").toLowerCase();
+            const telefonoCliente = (pedido.telefono || "").toLowerCase();
+            const pasaBusqueda = nombreCliente.includes(textoBusqueda) || telefonoCliente.includes(textoBusqueda);
+
+            if (!pedido.fecha) {
+                return mesSel === "todos" && anioSel === "todos" && pasaBusqueda;
+            }
+
             const fechaObj = new Date(pedido.fecha.toMillis());
             const mesPedido = (fechaObj.getMonth() + 1).toString();
             const anioPedido = fechaObj.getFullYear().toString();
@@ -888,11 +900,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const pasaMes = (mesSel === "todos" || mesSel === mesPedido);
             const pasaAnio = (anioSel === "todos" || anioSel === anioPedido);
             
-            return pasaMes && pasaAnio;
+            return pasaMes && pasaAnio && pasaBusqueda;
         });
 
         if (pedidosFiltrados.length === 0) {
-            listaPedidosDiv.innerHTML = "<p style='text-align:center; color:#aaa; font-size:14px;'>No hay pedidos registrados para esta fecha.</p>";
+            listaPedidosDiv.innerHTML = "<p style='text-align:center; color:#aaa; font-size:14px;'>No hay pedidos registrados para esta fecha o búsqueda.</p>";
         } else {
             pedidosFiltrados.forEach((pedido) => {
                 const estado = pedido.estado || "Pendiente"; 
