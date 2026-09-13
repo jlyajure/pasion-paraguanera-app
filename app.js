@@ -631,6 +631,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // ¡AQUÍ ESTÁ LA MAGIA PARA REGRESAR EL RECIBO GRANDE!
     listaClientesDiv.addEventListener("click", (e) => {
         if (e.target.closest(".btn-eliminar-cli")) { 
             Swal.fire({
@@ -702,9 +703,21 @@ document.addEventListener("DOMContentLoaded", () => {
                             if (nuevaDeuda <= 0) {
                                 nuevaDeuda = 0;
                                 nuevoEstado = "Al día";
-                                Toast.fire({ icon: 'success', title: '¡Deuda saldada!', text: `${cli.nombre} está solvente.` });
+                                // Revertido al Pop-up grande para screenshot
+                                Swal.fire({ 
+                                    icon: 'success', 
+                                    title: '¡Deuda saldada!', 
+                                    text: `${cli.nombre} está solvente.`,
+                                    confirmButtonColor: '#673ab7'
+                                });
                             } else {
-                                Toast.fire({ icon: 'success', title: 'Abono registrado', text: `Nueva deuda: $${nuevaDeuda.toFixed(2)}` });
+                                // Revertido al Pop-up grande para screenshot
+                                Swal.fire({ 
+                                    icon: 'success', 
+                                    title: 'Abono registrado', 
+                                    text: `La nueva deuda de ${cli.nombre} es de: $${nuevaDeuda.toFixed(2)}`,
+                                    confirmButtonColor: '#673ab7'
+                                });
                             }
                             
                             try {
@@ -723,7 +736,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // SISTEMA DE RENDERIZADO Y BUSCADOR INTELIGENTE DE CLIENTES
     function renderizarClientes() {
         listaClientesDiv.innerHTML = "";
 
