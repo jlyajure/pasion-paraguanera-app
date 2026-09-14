@@ -58,6 +58,7 @@ let clientesActuales = [];
 let pedidosActuales = [];
 let gastosActuales = []; 
 let carrito = []; 
+let carritoAdmin = []; // Carrito interno para pedidos manuales
 let tasaBCV = 1;
 
 let unsubClientes = null;
@@ -115,6 +116,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnVolverAdminPed = document.getElementById("btn-volver-admin-ped");
     const listaPedidosDiv = document.getElementById("lista-pedidos");
 
+    // ==========================================
+    // 1. INYECCIÓN DEL MÓDULO DE GASTOS
+    // ==========================================
     let btnGastos = document.getElementById("btn-gastos");
     if (!btnGastos && btnPedidos) {
         btnGastos = document.createElement("button");
@@ -158,11 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div id="lista-gastos" style="display: flex; flex-direction: column; gap: 10px;"></div>
         `;
         
-        if (moduloPedidos) {
-            moduloPedidos.parentNode.insertBefore(moduloGastos, moduloPedidos.nextSibling);
-        } else {
-            vistaAdmin.parentNode.appendChild(moduloGastos);
-        }
+        if (moduloPedidos) moduloPedidos.parentNode.insertBefore(moduloGastos, moduloPedidos.nextSibling);
     }
 
     const btnVolverAdminGas = document.getElementById("btn-volver-admin-gas");
@@ -214,10 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (productoId === "ninguno") {
                 totalUSD = valorInput;
                 await addDoc(collection(db, "gastos"), {
-                    concepto: concepto,
-                    tipo: "Externo",
-                    totalUSD: totalUSD,
-                    fecha: serverTimestamp()
+                    concepto: concepto, tipo: "Externo", totalUSD: totalUSD, fecha: serverTimestamp()
                 });
             } else {
                 const prod = productosActuales.find(p => p.id === productoId);
@@ -226,64 +223,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (cantidad > stockDisponible) {
                     Swal.fire({ title: "Stock insuficiente", text: `Solo quedan ${stockDisponible} unidades de ${prod.nombre}.`, icon: "warning" });
-                    btnGuardarGas.disabled = false;
-                    btnGuardarGas.textContent = "Registrar Gasto";
-                    return;
+                    btnGuardarGas.disabled = false; btnGuardarGas.textContent = "Registrar Gasto"; return;
                 }
 
                 totalUSD = cantidad * parseFloat(prod.precio || 0);
 
                 await addDoc(collection(db, "gastos"), {
-                    concepto: concepto,
-                    tipo: "Retiro de Inventario",
-                    productoId: prod.id,
-                    productoNombre: prod.nombre,
-                    cantidad: cantidad,
-                    totalUSD: totalUSD,
-                    fecha: serverTimestamp()
+                    concepto: concepto, tipo: "Retiro de Inventario", productoId: prod.id,
+                    productoNombre: prod.nombre, cantidad: cantidad, totalUSD: totalUSD, fecha: serverTimestamp()
                 });
 
-                await updateDoc(doc(db, "productos", prod.id), {
-                    stock: increment(-cantidad)
-                });
+                await updateDoc(doc(db, "productos", prod.id), { stock: increment(-cantidad) });
             }
 
-            Toast.fire({
-                icon: 'success',
-                title: 'Gasto Registrado',
-                text: `Contabilizado: $${totalUSD.toFixed(2)}`
-            });
-            
-            formGasto.reset();
-            gasMontoCantidad.placeholder = "Monto del gasto en $";
-            gasMontoCantidad.step = "0.01";
-            gasMontoCantidad.min = "0.01";
+            Toast.fire({ icon: 'success', title: 'Gasto Registrado', text: `Contabilizado: $${totalUSD.toFixed(2)}` });
+            formGasto.reset(); gasMontoCantidad.placeholder = "Monto del gasto en $"; gasMontoCantidad.step = "0.01"; gasMontoCantidad.min = "0.01";
         } catch (error) {
-            console.error(error);
             Swal.fire({ title: "Error de Conexión", text: "Motivo: " + error.message, icon: "error" });
         } finally {
-            btnGuardarGas.disabled = false;
-            btnGuardarGas.textContent = "Registrar Gasto";
+            btnGuardarGas.disabled = false; btnGuardarGas.textContent = "Registrar Gasto";
         }
     });
 
     listaGastosDiv.addEventListener("click", (e) => {
         if (e.target.closest(".btn-eliminar-gas")) {
             const btn = e.target.closest(".btn-eliminar-gas");
-            const id = btn.getAttribute("data-id");
-            const tipo = btn.getAttribute("data-tipo");
-            const prodId = btn.getAttribute("data-prodid");
-            const cant = parseInt(btn.getAttribute("data-cant")) || 0;
+            const id = btn.getAttribute("data-id"); const tipo = btn.getAttribute("data-tipo");
+            const prodId = btn.getAttribute("data-prodid"); const cant = parseInt(btn.getAttribute("data-cant")) || 0;
 
             Swal.fire({
                 title: '¿Anular este registro?',
                 text: tipo === "Retiro de Inventario" ? "Se devolverán los productos al inventario físico." : "Desaparecerá del historial de gastos.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#e91e63',
-                cancelButtonColor: '#555',
-                confirmButtonText: 'Sí, anular',
-                cancelButtonText: 'Volver'
+                icon: 'warning', showCancelButton: true, confirmButtonColor: '#e91e63', cancelButtonColor: '#555', confirmButtonText: 'Sí, anular', cancelButtonText: 'Volver'
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     try {
@@ -294,9 +265,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         } else {
                             Toast.fire({ icon: 'success', title: 'Anulado', text: 'Gasto borrado del historial.' });
                         }
-                    } catch (err) {
-                        Swal.fire('Error', 'No se pudo anular: ' + err.message, 'error');
-                    }
+                    } catch (err) { Swal.fire('Error', 'No se pudo anular: ' + err.message, 'error'); }
                 }
             });
         }
@@ -304,26 +273,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderizarGastos() {
         if(!listaGastosDiv) return;
-        listaGastosDiv.innerHTML = "";
-        let totalUSDGastos = 0;
+        listaGastosDiv.innerHTML = ""; let totalUSDGastos = 0;
 
         if (gastosActuales.length === 0) {
             listaGastosDiv.innerHTML = "<p style='text-align:center; color:#aaa; font-size:14px;'>No hay gastos registrados aún.</p>";
-            document.getElementById("total-gas-usd").textContent = "$0.00";
-            document.getElementById("total-gas-bs").textContent = "0.00";
-            return;
+            document.getElementById("total-gas-usd").textContent = "$0.00"; document.getElementById("total-gas-bs").textContent = "0.00"; return;
         }
 
         gastosActuales.forEach(gasto => {
-            const totalUSD = parseFloat(gasto.totalUSD || 0);
-            totalUSDGastos += totalUSD;
+            const totalUSD = parseFloat(gasto.totalUSD || 0); totalUSDGastos += totalUSD;
             const fechaStr = gasto.fecha ? new Date(gasto.fecha.toMillis()).toLocaleString() : "Fecha desconocida";
             
             const div = document.createElement("div");
             div.style.cssText = "background-color: #222; padding: 12px; border-radius: 6px; border-left: 4px solid #e91e63; margin-bottom: 8px;";
             
-            let badgeTipo = gasto.tipo === "Externo" 
-                ? `<span style="background: #555; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Gasto Externo/Efectivo</span>`
+            let badgeTipo = gasto.tipo === "Externo" ? `<span style="background: #555; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Gasto Externo/Efectivo</span>`
                 : `<span style="background: #e91e63; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Uso Inventario: ${gasto.cantidad}x ${gasto.productoNombre}</span>`;
 
             div.innerHTML = `
@@ -333,8 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <div style="margin-bottom: 8px;">${badgeTipo}</div>
                 <div style="display: flex; justify-content: space-between; align-items: center; color: #bbb; font-size: 12px;">
-                    <span>${fechaStr}</span>
-                    <strong style="color: #ff80ab; font-size: 15px;">-$${totalUSD.toFixed(2)}</strong>
+                    <span>${fechaStr}</span><strong style="color: #ff80ab; font-size: 15px;">-$${totalUSD.toFixed(2)}</strong>
                 </div>
             `;
             listaGastosDiv.appendChild(div);
@@ -344,6 +307,244 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("total-gas-bs").textContent = (totalUSDGastos * tasaBCV).toFixed(2);
     }
 
+
+    // ==========================================
+    // 2. NUEVO MÓDULO: CREAR PEDIDO MANUAL (POS)
+    // ==========================================
+    let btnPos = document.getElementById("btn-pos");
+    if (!btnPos && btnPedidos) {
+        btnPos = document.createElement("button");
+        btnPos.id = "btn-pos";
+        btnPos.className = btnPedidos.className; 
+        btnPos.style.cssText = "background-color: #00bcd4; color: white; padding: 15px; margin-top: 10px; margin-bottom: 10px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;";
+        btnPos.innerHTML = "📝 Crear Pedido Manual";
+        // Insertamos el botón justo debajo de "Gastos" (o "Pedidos" si no hay Gastos)
+        let referencia = btnGastos ? btnGastos : btnPedidos;
+        referencia.parentNode.insertBefore(btnPos, referencia.nextSibling);
+    }
+
+    let moduloPos = document.getElementById("modulo-pos");
+    if (!moduloPos) {
+        moduloPos = document.createElement("div");
+        moduloPos.id = "modulo-pos";
+        moduloPos.classList.add("oculto");
+        moduloPos.innerHTML = `
+            <div style="text-align: left; margin-bottom: 20px;">
+                <button id="btn-volver-admin-pos" style="background-color: transparent; color: #00bcd4; padding: 8px 16px; border: 1px solid #00bcd4; border-radius: 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; transition: all 0.2s;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/></svg>
+                    Volver al Panel
+                </button>
+            </div>
+            <h2 style="text-align: center; color: #00bcd4; margin-bottom: 10px;">📝 Crear Pedido Manual</h2>
+            <p style="text-align: center; font-size: 13px; color: #aaa; margin-bottom: 20px;">Registra compras de ventanilla o clientes que no usan la App.</p>
+
+            <div style="background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333;">
+                <h3 style="color: #fff; margin-top: 0; font-size: 15px; border-bottom: 1px solid #333; padding-bottom: 8px;">1. Datos del Cliente</h3>
+                <select id="pos-select-cliente" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin-bottom: 10px;">
+                    <option value="">-- Buscar en directorio (Opcional) --</option>
+                </select>
+                <input type="text" id="pos-nombre" placeholder="Nombre y Apellido" required style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin-bottom: 10px; box-sizing: border-box;">
+                <input type="text" id="pos-telefono" placeholder="WhatsApp (Ej: 58412...)" required style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin-bottom: 10px; box-sizing: border-box;">
+                <input type="text" id="pos-direccion" placeholder="Dirección (Opcional)" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; box-sizing: border-box;">
+            </div>
+
+            <div style="background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333;">
+                <h3 style="color: #fff; margin-top: 0; font-size: 15px; border-bottom: 1px solid #333; padding-bottom: 8px;">2. Agregar Productos</h3>
+                <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                    <select id="pos-select-producto" style="flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
+                        <option value="">Selecciona producto...</option>
+                    </select>
+                    <input type="number" id="pos-cantidad" value="1" min="1" style="width: 60px; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; text-align: center;">
+                    <button id="pos-btn-agregar" style="background-color: #4caf50; color: white; border: none; border-radius: 4px; padding: 0 15px; font-weight: bold; cursor: pointer; font-size: 20px;">+</button>
+                </div>
+                <div id="pos-lista-carrito" style="margin-bottom: 15px; min-height: 50px;">
+                    <p style="color: #666; font-size: 13px; text-align: center; padding-top: 15px;">El carrito interno está vacío.</p>
+                </div>
+                <div style="background-color: #0b2126; padding: 10px; border-radius: 4px; text-align: right; border: 1px solid #00bcd4;">
+                    <span style="color: #aaa; font-size: 13px;">Total del Pedido:</span>
+                    <strong style="color: #00bcd4; font-size: 18px; margin-left: 10px;">$<span id="pos-total-usd">0.00</span></strong>
+                </div>
+            </div>
+
+            <div style="background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333;">
+                <h3 style="color: #fff; margin-top: 0; font-size: 15px; border-bottom: 1px solid #333; padding-bottom: 8px;">3. Finalizar</h3>
+                <select id="pos-tipo-pago" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin-bottom: 15px;">
+                    <option value="contado">Pago al Contado (Completo)</option>
+                    <option value="credito">Pago a Crédito (Genera Deuda)</option>
+                </select>
+                <button id="pos-btn-guardar" style="width: 100%; background-color: #00bcd4; color: white; padding: 15px; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer;">Procesar Pedido Manual</button>
+            </div>
+        `;
+        if (moduloPedidos) moduloPedidos.parentNode.insertBefore(moduloPos, moduloPedidos.nextSibling);
+    }
+
+    const btnVolverAdminPos = document.getElementById("btn-volver-admin-pos");
+    const posSelectCliente = document.getElementById("pos-select-cliente");
+    const posNombre = document.getElementById("pos-nombre");
+    const posTelefono = document.getElementById("pos-telefono");
+    const posDireccion = document.getElementById("pos-direccion");
+    const posSelectProducto = document.getElementById("pos-select-producto");
+    const posCantidad = document.getElementById("pos-cantidad");
+    const posBtnAgregar = document.getElementById("pos-btn-agregar");
+    const posListaCarrito = document.getElementById("pos-lista-carrito");
+    const posTotalUsd = document.getElementById("pos-total-usd");
+    const posTipoPago = document.getElementById("pos-tipo-pago");
+    const posBtnGuardar = document.getElementById("pos-btn-guardar");
+
+    if (btnPos) {
+        btnPos.addEventListener("click", () => {
+            vistaAdmin.classList.add("oculto"); moduloPos.classList.remove("oculto");
+            window.scrollTo({ top: 0, behavior: 'smooth' }); actualizarListasPos();
+        });
+    }
+    if (btnVolverAdminPos) {
+        btnVolverAdminPos.addEventListener("click", () => {
+            moduloPos.classList.add("oculto"); vistaAdmin.classList.remove("oculto");
+        });
+    }
+
+    function actualizarListasPos() {
+        if (!posSelectCliente) return;
+        const valCli = posSelectCliente.value;
+        posSelectCliente.innerHTML = '<option value="">-- Buscar en directorio (Opcional) --</option>';
+        clientesActuales.forEach(c => {
+            posSelectCliente.innerHTML += `<option value="${c.id}">${c.nombre} (${c.telefono})</option>`;
+        });
+        if(Array.from(posSelectCliente.options).some(opt => opt.value === valCli)) posSelectCliente.value = valCli;
+
+        const valProd = posSelectProducto.value;
+        posSelectProducto.innerHTML = '<option value="">Selecciona producto...</option>';
+        productosActuales.forEach(p => {
+            if(parseInt(p.stock) > 0) {
+                posSelectProducto.innerHTML += `<option value="${p.id}">${p.nombre} ($${parseFloat(p.precio).toFixed(2)}) - Stock: ${p.stock}</option>`;
+            }
+        });
+        if(Array.from(posSelectProducto.options).some(opt => opt.value === valProd)) posSelectProducto.value = valProd;
+    }
+
+    if (posSelectCliente) {
+        posSelectCliente.addEventListener("change", () => {
+            if (posSelectCliente.value) {
+                const cli = clientesActuales.find(c => c.id === posSelectCliente.value);
+                if (cli) {
+                    posNombre.value = cli.nombre || "";
+                    posTelefono.value = cli.telefono || "";
+                    posDireccion.value = cli.direccion || "";
+                }
+            } else {
+                posNombre.value = ""; posTelefono.value = ""; posDireccion.value = "";
+            }
+        });
+    }
+
+    if (posBtnAgregar) {
+        posBtnAgregar.addEventListener("click", (e) => {
+            e.preventDefault();
+            const prodId = posSelectProducto.value;
+            const cant = parseInt(posCantidad.value) || 1;
+            
+            if(!prodId) { Swal.fire({ title: "Atención", text: "Selecciona un producto primero.", icon: "warning" }); return; }
+            const prodDb = productosActuales.find(p => p.id === prodId);
+            if(!prodDb) return;
+
+            const stockDisp = parseInt(prodDb.stock) || 0;
+            const idx = carritoAdmin.findIndex(item => item.id === prodId);
+            const cantEnCarrito = idx > -1 ? carritoAdmin[idx].cantidad : 0;
+
+            if (cantEnCarrito + cant > stockDisp) {
+                Swal.fire({ title: "Stock insuficiente", text: `Solo quedan ${stockDisp - cantEnCarrito} unidades disponibles para agregar.`, icon: "warning" }); return;
+            }
+
+            if (idx > -1) { carritoAdmin[idx].cantidad += cant; } else { carritoAdmin.push({ ...prodDb, cantidad: cant }); }
+            posCantidad.value = 1; posSelectProducto.value = ""; renderizarCarritoAdmin();
+        });
+    }
+
+    function renderizarCarritoAdmin() {
+        if(!posListaCarrito) return;
+        posListaCarrito.innerHTML = ""; let total = 0;
+        
+        if (carritoAdmin.length === 0) {
+            posListaCarrito.innerHTML = '<p style="color: #666; font-size: 13px; text-align: center; padding-top: 15px;">El carrito interno está vacío.</p>';
+            posTotalUsd.textContent = "0.00"; return;
+        }
+
+        carritoAdmin.forEach((item, index) => {
+            const precio = typeof item.precio === 'number' ? item.precio : parseFloat(item.precio || 0);
+            const subtotal = item.cantidad * precio; total += subtotal;
+
+            const div = document.createElement("div");
+            div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: #222; padding: 8px; margin-bottom: 5px; border-radius: 4px; border-left: 3px solid #00bcd4;";
+            div.innerHTML = `
+                <div style="flex: 1; color: #fff; font-size: 14px; margin-left: 8px;">${item.cantidad}x ${item.nombre}</div>
+                <div style="color: #81c784; font-weight: bold; margin-right: 15px;">$${subtotal.toFixed(2)}</div>
+                <button class="pos-btn-quitar" data-index="${index}" style="background: none; border: none; color: #f44336; cursor: pointer; font-size: 18px; padding: 0;">✖</button>
+            `;
+            posListaCarrito.appendChild(div);
+        });
+        posTotalUsd.textContent = total.toFixed(2);
+    }
+
+    if (posListaCarrito) {
+        posListaCarrito.addEventListener("click", (e) => {
+            if(e.target.classList.contains("pos-btn-quitar")) {
+                const idx = e.target.getAttribute("data-index");
+                carritoAdmin.splice(idx, 1); renderizarCarritoAdmin();
+            }
+        });
+    }
+
+    if (posBtnGuardar) {
+        posBtnGuardar.addEventListener("click", async () => {
+            const nombreCli = posNombre.value.trim();
+            const tlfCli = posTelefono.value.trim();
+            const dirCli = posDireccion.value.trim();
+            const tipoPago = posTipoPago.value;
+
+            if (nombreCli === "" || tlfCli === "") { Swal.fire({ title: "Faltan datos", text: "El nombre y el teléfono son obligatorios.", icon: "warning" }); return; }
+            if (carritoAdmin.length === 0) { Swal.fire({ title: "Carrito vacío", text: "Agrega al menos un producto a la cuenta.", icon: "warning" }); return; }
+
+            posBtnGuardar.disabled = true; posBtnGuardar.textContent = "Procesando...";
+
+            try {
+                let total = 0; const arrayProds = [];
+                carritoAdmin.forEach(item => {
+                    const precio = typeof item.precio === 'number' ? item.precio : parseFloat(item.precio || 0);
+                    total += (item.cantidad * precio);
+                    arrayProds.push({ id: item.id, nombre: item.nombre, cantidad: item.cantidad, precio: precio.toFixed(2) });
+                });
+
+                const totalBs = (total * tasaBCV).toFixed(2);
+                const tlfLimpio = formatearTelefono(tlfCli);
+
+                await addDoc(collection(db, "pedidos"), {
+                    cliente: nombreCli, telefono: tlfLimpio, direccion: dirCli, productos: arrayProds,
+                    totalUSD: total.toFixed(2), totalVES: totalBs, modalidadPago: tipoPago === "credito" ? "A Crédito" : "Contado", estado: "Completado", fecha: serverTimestamp(), origen: "POS Manual"
+                });
+
+                const datosAct = { nombre: nombreCli, telefono: tlfLimpio, direccion: dirCli, fechaUltimoPedido: serverTimestamp() };
+                if (tipoPago === "credito") { datosAct.deuda = increment(total); datosAct.estado = "Con Deuda"; }
+                await setDoc(doc(db, "clientes", tlfLimpio), datosAct, { merge: true });
+
+                for (const item of carritoAdmin) {
+                    await updateDoc(doc(db, "productos", item.id), { stock: increment(-item.cantidad) });
+                }
+
+                carritoAdmin = []; renderizarCarritoAdmin();
+                posNombre.value = ""; posTelefono.value = ""; posDireccion.value = ""; posSelectCliente.value = "";
+
+                Swal.fire({ icon: 'success', title: '¡Venta Registrada!', text: `La factura de ${nombreCli} fue guardada exitosamente.`, confirmButtonColor: '#00bcd4' });
+            } catch(error) {
+                Swal.fire({ title: "Error", text: error.message, icon: "error" });
+            } finally {
+                posBtnGuardar.disabled = false; posBtnGuardar.textContent = "Procesar Pedido Manual";
+            }
+        });
+    }
+
+    // ==========================================
+    // SECCIÓN NORMAL DE CARRITO Y FUNCIONES BASE
+    // ==========================================
     const cartNombreInput = document.getElementById("cart-nombre");
     const cartTelefonoInput = document.getElementById("cart-telefono");
     const cartDireccionInput = document.getElementById("cart-direccion");
@@ -433,6 +634,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     clientesActuales.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
                 }
                 renderizarClientes();
+                if (moduloPos && !moduloPos.classList.contains("oculto")) actualizarListasPos();
             });
 
             unsubPedidos = onSnapshot(collection(db, "pedidos"), (snapshot) => {
@@ -460,6 +662,7 @@ document.addEventListener("DOMContentLoaded", () => {
             vistaAdmin.classList.add("oculto");
             moduloInventario.classList.add("oculto"); moduloClientes.classList.add("oculto"); moduloPedidos.classList.add("oculto");
             if (moduloGastos) moduloGastos.classList.add("oculto");
+            if (moduloPos) moduloPos.classList.add("oculto");
             vistaCliente.classList.remove("oculto");
             actualizarInterfazCarrito(); 
             
@@ -600,22 +803,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const totalBs = (valorTotalInversion * tasaBCV).toFixed(2);
         divResumen.innerHTML = `<h3 style="margin: 0 0 5px 0; color: #81c784; font-size: 16px;">💰 Capital Total en Inventario</h3><span style="font-size: 22px; color: #fff; font-weight: bold;">$${valorTotalInversion.toFixed(2)}</span> <span style="color: #bbb; font-size: 14px;">| Bs. ${totalBs}</span>`;
 
-        if (gasProducto) {
-            const valorAnterior = gasProducto.value;
-            gasProducto.innerHTML = `<option value="ninguno">🔴 Gasto Externo (Solo Dinero, No afecta inventario)</option>`;
-            productosActuales.forEach(p => {
-                if(parseInt(p.stock) > 0) {
-                    gasProducto.innerHTML += `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`;
-                }
-            });
-            if(Array.from(gasProducto.options).some(opt => opt.value === valorAnterior)) {
-                gasProducto.value = valorAnterior;
-            }
-        }
-
+        if (moduloPos && !moduloPos.classList.contains("oculto")) actualizarListasPos();
         actualizarInterfazCarrito(); renderizarListaCarrito();
     }
 
+    // LISTAS Y EVENTOS RESTANTES 
     formCliente.addEventListener("submit", async (e) => {
         e.preventDefault(); btnGuardarCli.disabled = true; const textoOriginal = btnGuardarCli.textContent; btnGuardarCli.textContent = "Guardando...";
         try {
