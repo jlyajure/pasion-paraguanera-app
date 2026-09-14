@@ -132,7 +132,10 @@ document.addEventListener("DOMContentLoaded", () => {
         moduloGastos.classList.add("oculto");
         moduloGastos.innerHTML = `
             <div style="text-align: left; margin-bottom: 20px;">
-                <button id="btn-volver-admin-gas" style="background-color: #555; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">⬅ Volver al Panel</button>
+                <button id="btn-volver-admin-gas" style="background-color: transparent; color: #ff80ab; padding: 8px 16px; border: 1px solid #e91e63; border-radius: 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; transition: all 0.2s;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/></svg>
+                    Volver al Panel
+                </button>
             </div>
             <h2 style="text-align: center; color: #e91e63; margin-bottom: 10px;">📉 Gastos y Retiros Internos</h2>
             <p style="text-align: center; font-size: 13px; color: #aaa; margin-bottom: 20px;">Registra salidas de dinero o resta mercancía por consumo/daños del negocio.</p>
@@ -631,7 +634,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ¡SISTEMA DE RECIBOS DE ABONOS RESTAURADO!
     listaClientesDiv.addEventListener("click", (e) => {
         if (e.target.closest(".btn-eliminar-cli")) { 
             Swal.fire({
@@ -703,7 +705,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             if (nuevaDeuda <= 0) {
                                 nuevaDeuda = 0;
                                 nuevoEstado = "Al día";
-                                // Recibo grande para screenshot
                                 Swal.fire({ 
                                     icon: 'success', 
                                     title: '¡Deuda saldada!', 
@@ -711,7 +712,6 @@ document.addEventListener("DOMContentLoaded", () => {
                                     confirmButtonColor: '#673ab7'
                                 });
                             } else {
-                                // Recibo grande para screenshot
                                 Swal.fire({ 
                                     icon: 'success', 
                                     title: 'Abono registrado', 
