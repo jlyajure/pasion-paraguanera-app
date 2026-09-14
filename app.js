@@ -58,7 +58,7 @@ let clientesActuales = [];
 let pedidosActuales = [];
 let gastosActuales = []; 
 let carrito = []; 
-let carritoAdmin = []; // Carrito interno para pedidos manuales
+let carritoAdmin = []; 
 let tasaBCV = 1;
 
 let unsubClientes = null;
@@ -136,7 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
         moduloGastos.classList.add("oculto");
         moduloGastos.innerHTML = `
             <div style="text-align: left; margin-bottom: 20px;">
-                <button id="btn-volver-admin-gas" style="background-color: transparent; color: #ff80ab; padding: 8px 16px; border: 1px solid #e91e63; border-radius: 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; transition: all 0.2s;">
+                <button id="btn-volver-admin-gas" style="background-color: transparent; color: #ff80ab; padding: 8px 16px; border: 1px solid #e91e63; border-radius: 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; width: max-content; transition: all 0.2s;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/></svg>
                     Volver al Panel
                 </button>
@@ -162,7 +162,11 @@ document.addEventListener("DOMContentLoaded", () => {
             <div id="lista-gastos" style="display: flex; flex-direction: column; gap: 10px;"></div>
         `;
         
-        if (moduloPedidos) moduloPedidos.parentNode.insertBefore(moduloGastos, moduloPedidos.nextSibling);
+        if (moduloPedidos) {
+            moduloPedidos.parentNode.insertBefore(moduloGastos, moduloPedidos.nextSibling);
+        } else {
+            vistaAdmin.parentNode.appendChild(moduloGastos);
+        }
     }
 
     const btnVolverAdminGas = document.getElementById("btn-volver-admin-gas");
@@ -214,7 +218,10 @@ document.addEventListener("DOMContentLoaded", () => {
             if (productoId === "ninguno") {
                 totalUSD = valorInput;
                 await addDoc(collection(db, "gastos"), {
-                    concepto: concepto, tipo: "Externo", totalUSD: totalUSD, fecha: serverTimestamp()
+                    concepto: concepto,
+                    tipo: "Externo",
+                    totalUSD: totalUSD,
+                    fecha: serverTimestamp()
                 });
             } else {
                 const prod = productosActuales.find(p => p.id === productoId);
@@ -223,38 +230,64 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (cantidad > stockDisponible) {
                     Swal.fire({ title: "Stock insuficiente", text: `Solo quedan ${stockDisponible} unidades de ${prod.nombre}.`, icon: "warning" });
-                    btnGuardarGas.disabled = false; btnGuardarGas.textContent = "Registrar Gasto"; return;
+                    btnGuardarGas.disabled = false;
+                    btnGuardarGas.textContent = "Registrar Gasto";
+                    return;
                 }
 
                 totalUSD = cantidad * parseFloat(prod.precio || 0);
 
                 await addDoc(collection(db, "gastos"), {
-                    concepto: concepto, tipo: "Retiro de Inventario", productoId: prod.id,
-                    productoNombre: prod.nombre, cantidad: cantidad, totalUSD: totalUSD, fecha: serverTimestamp()
+                    concepto: concepto,
+                    tipo: "Retiro de Inventario",
+                    productoId: prod.id,
+                    productoNombre: prod.nombre,
+                    cantidad: cantidad,
+                    totalUSD: totalUSD,
+                    fecha: serverTimestamp()
                 });
 
-                await updateDoc(doc(db, "productos", prod.id), { stock: increment(-cantidad) });
+                await updateDoc(doc(db, "productos", prod.id), {
+                    stock: increment(-cantidad)
+                });
             }
 
-            Toast.fire({ icon: 'success', title: 'Gasto Registrado', text: `Contabilizado: $${totalUSD.toFixed(2)}` });
-            formGasto.reset(); gasMontoCantidad.placeholder = "Monto del gasto en $"; gasMontoCantidad.step = "0.01"; gasMontoCantidad.min = "0.01";
+            Toast.fire({
+                icon: 'success',
+                title: 'Gasto Registrado',
+                text: `Contabilizado: $${totalUSD.toFixed(2)}`
+            });
+            
+            formGasto.reset();
+            gasMontoCantidad.placeholder = "Monto del gasto en $";
+            gasMontoCantidad.step = "0.01";
+            gasMontoCantidad.min = "0.01";
         } catch (error) {
+            console.error(error);
             Swal.fire({ title: "Error de Conexión", text: "Motivo: " + error.message, icon: "error" });
         } finally {
-            btnGuardarGas.disabled = false; btnGuardarGas.textContent = "Registrar Gasto";
+            btnGuardarGas.disabled = false;
+            btnGuardarGas.textContent = "Registrar Gasto";
         }
     });
 
     listaGastosDiv.addEventListener("click", (e) => {
         if (e.target.closest(".btn-eliminar-gas")) {
             const btn = e.target.closest(".btn-eliminar-gas");
-            const id = btn.getAttribute("data-id"); const tipo = btn.getAttribute("data-tipo");
-            const prodId = btn.getAttribute("data-prodid"); const cant = parseInt(btn.getAttribute("data-cant")) || 0;
+            const id = btn.getAttribute("data-id");
+            const tipo = btn.getAttribute("data-tipo");
+            const prodId = btn.getAttribute("data-prodid");
+            const cant = parseInt(btn.getAttribute("data-cant")) || 0;
 
             Swal.fire({
                 title: '¿Anular este registro?',
                 text: tipo === "Retiro de Inventario" ? "Se devolverán los productos al inventario físico." : "Desaparecerá del historial de gastos.",
-                icon: 'warning', showCancelButton: true, confirmButtonColor: '#e91e63', cancelButtonColor: '#555', confirmButtonText: 'Sí, anular', cancelButtonText: 'Volver'
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e91e63',
+                cancelButtonColor: '#555',
+                confirmButtonText: 'Sí, anular',
+                cancelButtonText: 'Volver'
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     try {
@@ -265,7 +298,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         } else {
                             Toast.fire({ icon: 'success', title: 'Anulado', text: 'Gasto borrado del historial.' });
                         }
-                    } catch (err) { Swal.fire('Error', 'No se pudo anular: ' + err.message, 'error'); }
+                    } catch (err) {
+                        Swal.fire('Error', 'No se pudo anular: ' + err.message, 'error');
+                    }
                 }
             });
         }
@@ -273,21 +308,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderizarGastos() {
         if(!listaGastosDiv) return;
-        listaGastosDiv.innerHTML = ""; let totalUSDGastos = 0;
+        listaGastosDiv.innerHTML = "";
+        let totalUSDGastos = 0;
 
         if (gastosActuales.length === 0) {
             listaGastosDiv.innerHTML = "<p style='text-align:center; color:#aaa; font-size:14px;'>No hay gastos registrados aún.</p>";
-            document.getElementById("total-gas-usd").textContent = "$0.00"; document.getElementById("total-gas-bs").textContent = "0.00"; return;
+            document.getElementById("total-gas-usd").textContent = "$0.00";
+            document.getElementById("total-gas-bs").textContent = "0.00";
+            return;
         }
 
         gastosActuales.forEach(gasto => {
-            const totalUSD = parseFloat(gasto.totalUSD || 0); totalUSDGastos += totalUSD;
+            const totalUSD = parseFloat(gasto.totalUSD || 0);
+            totalUSDGastos += totalUSD;
             const fechaStr = gasto.fecha ? new Date(gasto.fecha.toMillis()).toLocaleString() : "Fecha desconocida";
             
             const div = document.createElement("div");
             div.style.cssText = "background-color: #222; padding: 12px; border-radius: 6px; border-left: 4px solid #e91e63; margin-bottom: 8px;";
             
-            let badgeTipo = gasto.tipo === "Externo" ? `<span style="background: #555; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Gasto Externo/Efectivo</span>`
+            let badgeTipo = gasto.tipo === "Externo" 
+                ? `<span style="background: #555; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Gasto Externo/Efectivo</span>`
                 : `<span style="background: #e91e63; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Uso Inventario: ${gasto.cantidad}x ${gasto.productoNombre}</span>`;
 
             div.innerHTML = `
@@ -297,7 +337,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <div style="margin-bottom: 8px;">${badgeTipo}</div>
                 <div style="display: flex; justify-content: space-between; align-items: center; color: #bbb; font-size: 12px;">
-                    <span>${fechaStr}</span><strong style="color: #ff80ab; font-size: 15px;">-$${totalUSD.toFixed(2)}</strong>
+                    <span>${fechaStr}</span>
+                    <strong style="color: #ff80ab; font-size: 15px;">-$${totalUSD.toFixed(2)}</strong>
                 </div>
             `;
             listaGastosDiv.appendChild(div);
@@ -318,7 +359,6 @@ document.addEventListener("DOMContentLoaded", () => {
         btnPos.className = btnPedidos.className; 
         btnPos.style.cssText = "background-color: #00bcd4; color: white; padding: 15px; margin-top: 10px; margin-bottom: 10px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;";
         btnPos.innerHTML = "📝 Crear Pedido Manual";
-        // Insertamos el botón justo debajo de "Gastos" (o "Pedidos" si no hay Gastos)
         let referencia = btnGastos ? btnGastos : btnPedidos;
         referencia.parentNode.insertBefore(btnPos, referencia.nextSibling);
     }
@@ -330,7 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
         moduloPos.classList.add("oculto");
         moduloPos.innerHTML = `
             <div style="text-align: left; margin-bottom: 20px;">
-                <button id="btn-volver-admin-pos" style="background-color: transparent; color: #00bcd4; padding: 8px 16px; border: 1px solid #00bcd4; border-radius: 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; transition: all 0.2s;">
+                <button id="btn-volver-admin-pos" style="background-color: transparent; color: #00bcd4; padding: 8px 16px; border: 1px solid #00bcd4; border-radius: 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; width: max-content; transition: all 0.2s;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/></svg>
                     Volver al Panel
                 </button>
@@ -803,11 +843,23 @@ document.addEventListener("DOMContentLoaded", () => {
         const totalBs = (valorTotalInversion * tasaBCV).toFixed(2);
         divResumen.innerHTML = `<h3 style="margin: 0 0 5px 0; color: #81c784; font-size: 16px;">💰 Capital Total en Inventario</h3><span style="font-size: 22px; color: #fff; font-weight: bold;">$${valorTotalInversion.toFixed(2)}</span> <span style="color: #bbb; font-size: 14px;">| Bs. ${totalBs}</span>`;
 
+        if (gasProducto) {
+            const valorAnterior = gasProducto.value;
+            gasProducto.innerHTML = `<option value="ninguno">🔴 Gasto Externo (Solo Dinero, No afecta inventario)</option>`;
+            productosActuales.forEach(p => {
+                if(parseInt(p.stock) > 0) {
+                    gasProducto.innerHTML += `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`;
+                }
+            });
+            if(Array.from(gasProducto.options).some(opt => opt.value === valorAnterior)) {
+                gasProducto.value = valorAnterior;
+            }
+        }
+
         if (moduloPos && !moduloPos.classList.contains("oculto")) actualizarListasPos();
         actualizarInterfazCarrito(); renderizarListaCarrito();
     }
 
-    // LISTAS Y EVENTOS RESTANTES 
     formCliente.addEventListener("submit", async (e) => {
         e.preventDefault(); btnGuardarCli.disabled = true; const textoOriginal = btnGuardarCli.textContent; btnGuardarCli.textContent = "Guardando...";
         try {
