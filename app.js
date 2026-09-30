@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const listaPedidosDiv = document.getElementById("lista-pedidos");
 
     // ==========================================
-    // 1. INYECCIÓN DEL MÓDULO DE GASTOS
+    // 1. MÓDULO DE GASTOS (CON FILTRO INTELIGENTE)
     // ==========================================
     let btnGastos = document.getElementById("btn-gastos");
     if (!btnGastos && btnPedidos) {
@@ -153,11 +153,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     <input type="number" id="gas-monto-cantidad" placeholder="Monto del gasto en $" required min="0.01" step="0.01" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
                     <button type="submit" id="btn-guardar-gas" style="background-color: #e91e63; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;">Registrar Gasto</button>
                 </form>
-            </div>
-            <div id="resumen-total-gastos" style="background-color: #33151d; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; border: 1px solid #e91e63;">
-                <h3 style="margin: 0 0 5px 0; color: #ff80ab; font-size: 16px;">💰 Total Gastos Generales</h3>
-                <span style="font-size: 22px; color: #fff; font-weight: bold;" id="total-gas-usd">$0.00</span> 
-                <span style="color: #bbb; font-size: 14px;">| Bs. <span id="total-gas-bs">0.00</span></span>
             </div>
             <div id="lista-gastos" style="display: flex; flex-direction: column; gap: 10px;"></div>
         `;
@@ -308,41 +303,103 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderizarGastos() {
         if(!listaGastosDiv) return;
+
+        let divFiltrosGas = document.getElementById("contenedor-filtros-gastos");
+        if (!divFiltrosGas) {
+            divFiltrosGas = document.createElement("div");
+            divFiltrosGas.id = "contenedor-filtros-gastos";
+            divFiltrosGas.style.cssText = "background-color: #33151d; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #e91e63; display: flex; flex-direction: column; gap: 10px;";
+            
+            const currentYear = new Date().getFullYear();
+            let yearOptions = `<option value="todos">Todos los años</option>`;
+            for(let y = 2024; y <= currentYear + 2; y++) {
+                yearOptions += `<option value="${y}">${y}</option>`;
+            }
+
+            divFiltrosGas.innerHTML = `
+                <div style="display: flex; gap: 10px; justify-content: space-between;">
+                    <select id="filtro-mes-gas" style="width: 48%; padding: 8px; background: #222; color: white; border: 1px solid #e91e63; border-radius: 4px; font-size: 14px;">
+                        <option value="todos">Todos los meses</option>
+                        <option value="1">Enero</option>
+                        <option value="2">Febrero</option>
+                        <option value="3">Marzo</option>
+                        <option value="4">Abril</option>
+                        <option value="5">Mayo</option>
+                        <option value="6">Junio</option>
+                        <option value="7">Julio</option>
+                        <option value="8">Agosto</option>
+                        <option value="9">Septiembre</option>
+                        <option value="10">Octubre</option>
+                        <option value="11">Noviembre</option>
+                        <option value="12">Diciembre</option>
+                    </select>
+                    <select id="filtro-anio-gas" style="width: 48%; padding: 8px; background: #222; color: white; border: 1px solid #e91e63; border-radius: 4px; font-size: 14px;">
+                        ${yearOptions}
+                    </select>
+                </div>
+                <div style="text-align: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">
+                    <h3 style="margin: 0 0 5px 0; color: #ff80ab; font-size: 16px;">💰 Total Gastos del Periodo</h3>
+                    <span style="font-size: 22px; color: #fff; font-weight: bold;" id="total-gas-usd">$0.00</span> 
+                    <span style="color: #bbb; font-size: 14px;">| Bs. <span id="total-gas-bs">0.00</span></span>
+                </div>
+            `;
+            listaGastosDiv.parentNode.insertBefore(divFiltrosGas, listaGastosDiv);
+            
+            // Selección inteligente del mes y año actual al cargar
+            document.getElementById("filtro-mes-gas").value = (new Date().getMonth() + 1).toString();
+            document.getElementById("filtro-anio-gas").value = currentYear.toString();
+
+            document.getElementById("filtro-mes-gas").addEventListener("change", renderizarGastos);
+            document.getElementById("filtro-anio-gas").addEventListener("change", renderizarGastos);
+        }
+
+        const mesSel = document.getElementById("filtro-mes-gas").value;
+        const anioSel = document.getElementById("filtro-anio-gas").value;
+
         listaGastosDiv.innerHTML = "";
         let totalUSDGastos = 0;
 
-        if (gastosActuales.length === 0) {
-            listaGastosDiv.innerHTML = "<p style='text-align:center; color:#aaa; font-size:14px;'>No hay gastos registrados aún.</p>";
-            document.getElementById("total-gas-usd").textContent = "$0.00";
-            document.getElementById("total-gas-bs").textContent = "0.00";
-            return;
-        }
-
-        gastosActuales.forEach(gasto => {
-            const totalUSD = parseFloat(gasto.totalUSD || 0);
-            totalUSDGastos += totalUSD;
-            const fechaStr = gasto.fecha ? new Date(gasto.fecha.toMillis()).toLocaleString() : "Fecha desconocida";
+        const gastosFiltrados = gastosActuales.filter(gasto => {
+            if (!gasto.fecha) return mesSel === "todos" && anioSel === "todos";
+            const fechaObj = new Date(gasto.fecha.toMillis());
+            const mesGasto = (fechaObj.getMonth() + 1).toString();
+            const anioGasto = fechaObj.getFullYear().toString();
             
-            const div = document.createElement("div");
-            div.style.cssText = "background-color: #222; padding: 12px; border-radius: 6px; border-left: 4px solid #e91e63; margin-bottom: 8px;";
+            const pasaMes = (mesSel === "todos" || mesSel === mesGasto);
+            const pasaAnio = (anioSel === "todos" || anioSel === anioGasto);
             
-            let badgeTipo = gasto.tipo === "Externo" 
-                ? `<span style="background: #555; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Gasto Externo/Efectivo</span>`
-                : `<span style="background: #e91e63; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Uso Inventario: ${gasto.cantidad}x ${gasto.productoNombre}</span>`;
-
-            div.innerHTML = `
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <strong style="color: white; font-size: 15px;">${gasto.concepto}</strong>
-                    <button class="btn-eliminar-gas" data-id="${gasto.id}" data-tipo="${gasto.tipo}" data-prodid="${gasto.productoId}" data-cant="${gasto.cantidad}" style="background: none; border: none; cursor: pointer; font-size: 18px;">🗑️</button>
-                </div>
-                <div style="margin-bottom: 8px;">${badgeTipo}</div>
-                <div style="display: flex; justify-content: space-between; align-items: center; color: #bbb; font-size: 12px;">
-                    <span>${fechaStr}</span>
-                    <strong style="color: #ff80ab; font-size: 15px;">-$${totalUSD.toFixed(2)}</strong>
-                </div>
-            `;
-            listaGastosDiv.appendChild(div);
+            return pasaMes && pasaAnio;
         });
+
+        if (gastosFiltrados.length === 0) {
+            listaGastosDiv.innerHTML = "<p style='text-align:center; color:#aaa; font-size:14px;'>No hay gastos registrados para este periodo.</p>";
+        } else {
+            gastosFiltrados.forEach(gasto => {
+                const totalUSD = parseFloat(gasto.totalUSD || 0);
+                totalUSDGastos += totalUSD;
+                const fechaStr = gasto.fecha ? new Date(gasto.fecha.toMillis()).toLocaleString() : "Fecha desconocida";
+                
+                const div = document.createElement("div");
+                div.style.cssText = "background-color: #222; padding: 12px; border-radius: 6px; border-left: 4px solid #e91e63; margin-bottom: 8px;";
+                
+                let badgeTipo = gasto.tipo === "Externo" 
+                    ? `<span style="background: #555; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Gasto Externo/Efectivo</span>`
+                    : `<span style="background: #e91e63; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Uso Inventario: ${gasto.cantidad}x ${gasto.productoNombre}</span>`;
+
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <strong style="color: white; font-size: 15px;">${gasto.concepto}</strong>
+                        <button class="btn-eliminar-gas" data-id="${gasto.id}" data-tipo="${gasto.tipo}" data-prodid="${gasto.productoId}" data-cant="${gasto.cantidad}" style="background: none; border: none; cursor: pointer; font-size: 18px;">🗑️</button>
+                    </div>
+                    <div style="margin-bottom: 8px;">${badgeTipo}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; color: #bbb; font-size: 12px;">
+                        <span>${fechaStr}</span>
+                        <strong style="color: #ff80ab; font-size: 15px;">-$${totalUSD.toFixed(2)}</strong>
+                    </div>
+                `;
+                listaGastosDiv.appendChild(div);
+            });
+        }
 
         document.getElementById("total-gas-usd").textContent = "$" + totalUSDGastos.toFixed(2);
         document.getElementById("total-gas-bs").textContent = (totalUSDGastos * tasaBCV).toFixed(2);
@@ -350,7 +407,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // ==========================================
-    // 2. NUEVO MÓDULO: CREAR PEDIDO MANUAL (POS)
+    // 2. MÓDULO: CREAR PEDIDO MANUAL (POS)
     // ==========================================
     let btnPos = document.getElementById("btn-pos");
     if (!btnPos && btnPedidos) {
@@ -613,6 +670,11 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("banner-bcv").classList.remove("oculto");
         }
         renderizarTodo(); 
+        if(vistaAdmin && !vistaAdmin.classList.contains("oculto")) {
+           renderizarClientes();
+           renderizarPedidos();
+           renderizarGastos();
+        }
     });
 
     document.getElementById("btn-guardar-tasa").addEventListener("click", async () => {
@@ -1081,6 +1143,13 @@ document.addEventListener("DOMContentLoaded", () => {
             divFiltros = document.createElement("div");
             divFiltros.id = "contenedor-filtros-pedidos";
             divFiltros.style.cssText = "background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333; display: flex; flex-direction: column; gap: 10px;";
+            
+            const currentYear = new Date().getFullYear();
+            let yearOptions = `<option value="todos">Todos los años</option>`;
+            for(let y = 2024; y <= currentYear + 2; y++) {
+                yearOptions += `<option value="${y}">${y}</option>`;
+            }
+
             divFiltros.innerHTML = `
                 <div style="width: 100%;">
                     <input type="text" id="input-buscador-ped" placeholder="🔍 Buscar factura por cliente o teléfono..." style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #222; color: white; font-size: 15px; box-sizing: border-box;">
@@ -1102,20 +1171,21 @@ document.addEventListener("DOMContentLoaded", () => {
                         <option value="12">Diciembre</option>
                     </select>
                     <select id="filtro-anio" style="width: 48%; padding: 8px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 14px;">
-                        <option value="todos">Todos los años</option>
-                        <option value="2026">2026</option>
-                        <option value="2027">2027</option>
-                        <option value="2028">2028</option>
+                        ${yearOptions}
                     </select>
                 </div>
                 <div style="text-align: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">
-                    <span style="color: #bbb; font-size: 13px;">Ventas del periodo (sin Cancelados):</span><br>
-                    <span style="font-size: 22px; color: #81c784; font-weight: bold;" id="total-filtro-usd">$0.00</span> 
+                    <h3 style="margin: 0 0 5px 0; color: #81c784; font-size: 16px;">💰 Ventas del Periodo (Sin Cancelados)</h3>
+                    <span style="font-size: 22px; color: #fff; font-weight: bold;" id="total-filtro-usd">$0.00</span> 
                     <span style="color: #bbb; font-size: 14px;">| Bs. <span id="total-filtro-bs">0.00</span></span>
                 </div>
             `;
             listaPedidosDiv.parentNode.insertBefore(divFiltros, listaPedidosDiv);
             
+            // Selección inteligente del mes y año actual al cargar
+            document.getElementById("filtro-mes").value = (new Date().getMonth() + 1).toString();
+            document.getElementById("filtro-anio").value = currentYear.toString();
+
             document.getElementById("filtro-mes").addEventListener("change", renderizarPedidos);
             document.getElementById("filtro-anio").addEventListener("change", renderizarPedidos);
             document.getElementById("input-buscador-ped").addEventListener("input", renderizarPedidos);
