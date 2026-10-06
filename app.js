@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const listaPedidosDiv = document.getElementById("lista-pedidos");
 
     // ==========================================
-    // 1. MÓDULO DE GASTOS (CON FILTRO INTELIGENTE)
+    // 1. MÓDULO DE GASTOS (CON BLINDAJE VISUAL)
     // ==========================================
     let btnGastos = document.getElementById("btn-gastos");
     if (!btnGastos && btnPedidos) {
@@ -151,7 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <option value="ninguno">🔴 Gasto Externo (Solo Dinero, No afecta inventario)</option>
                     </select>
                     <input type="number" id="gas-monto-cantidad" placeholder="Monto del gasto en $" required min="0.01" step="0.01" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
-                    <button type="submit" id="btn-guardar-gas" style="background-color: #e91e63; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;">Registrar Gasto</button>
+                    <button type="submit" id="btn-guardar-gas" style="background-color: #e91e63; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;">Registrar Gasto (Solo Dinero) 💸</button>
                 </form>
             </div>
             <div id="lista-gastos" style="display: flex; flex-direction: column; gap: 10px;"></div>
@@ -185,15 +185,21 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // El blindaje: El botón cambia de texto y color según el dropdown
     gasProducto.addEventListener("change", () => {
         if(gasProducto.value === "ninguno") {
             gasMontoCantidad.placeholder = "Monto del gasto en $";
             gasMontoCantidad.step = "0.01";
             gasMontoCantidad.min = "0.01";
+            btnGuardarGas.textContent = "Registrar Gasto (Solo Dinero) 💸";
+            btnGuardarGas.style.backgroundColor = "#e91e63";
         } else {
             gasMontoCantidad.placeholder = "Cantidad a restar del inventario (Unidades)";
             gasMontoCantidad.step = "1";
             gasMontoCantidad.min = "1";
+            btnGuardarGas.textContent = "Restar del Inventario 📦";
+            btnGuardarGas.style.backgroundColor = "#ff80ab";
+            btnGuardarGas.style.color = "#000";
         }
         gasMontoCantidad.value = "";
     });
@@ -201,6 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
     formGasto.addEventListener("submit", async (e) => {
         e.preventDefault();
         btnGuardarGas.disabled = true;
+        const textoOriginal = btnGuardarGas.textContent;
         btnGuardarGas.textContent = "Procesando...";
 
         const concepto = document.getElementById("gas-concepto").value.trim();
@@ -226,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (cantidad > stockDisponible) {
                     Swal.fire({ title: "Stock insuficiente", text: `Solo quedan ${stockDisponible} unidades de ${prod.nombre}.`, icon: "warning" });
                     btnGuardarGas.disabled = false;
-                    btnGuardarGas.textContent = "Registrar Gasto";
+                    btnGuardarGas.textContent = textoOriginal;
                     return;
                 }
 
@@ -257,12 +264,14 @@ document.addEventListener("DOMContentLoaded", () => {
             gasMontoCantidad.placeholder = "Monto del gasto en $";
             gasMontoCantidad.step = "0.01";
             gasMontoCantidad.min = "0.01";
+            btnGuardarGas.textContent = "Registrar Gasto (Solo Dinero) 💸";
+            btnGuardarGas.style.backgroundColor = "#e91e63";
+            btnGuardarGas.style.color = "#fff";
         } catch (error) {
             console.error(error);
             Swal.fire({ title: "Error de Conexión", text: "Motivo: " + error.message, icon: "error" });
         } finally {
             btnGuardarGas.disabled = false;
-            btnGuardarGas.textContent = "Registrar Gasto";
         }
     });
 
@@ -345,7 +354,6 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
             listaGastosDiv.parentNode.insertBefore(divFiltrosGas, listaGastosDiv);
             
-            // Selección inteligente del mes y año actual al cargar
             document.getElementById("filtro-mes-gas").value = (new Date().getMonth() + 1).toString();
             document.getElementById("filtro-anio-gas").value = currentYear.toString();
 
@@ -1182,7 +1190,6 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
             listaPedidosDiv.parentNode.insertBefore(divFiltros, listaPedidosDiv);
             
-            // Selección inteligente del mes y año actual al cargar
             document.getElementById("filtro-mes").value = (new Date().getMonth() + 1).toString();
             document.getElementById("filtro-anio").value = currentYear.toString();
 
