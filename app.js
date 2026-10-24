@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const listaPedidosDiv = document.getElementById("lista-pedidos");
 
     // ==========================================
-    // 1. MÓDULO DE GASTOS (CON BLINDAJE VISUAL)
+    // 1. MÓDULO DE GASTOS 
     // ==========================================
     let btnGastos = document.getElementById("btn-gastos");
     if (!btnGastos && btnPedidos) {
@@ -185,7 +185,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // El blindaje: El botón cambia de texto y color según el dropdown
     gasProducto.addEventListener("change", () => {
         if(gasProducto.value === "ninguno") {
             gasMontoCantidad.placeholder = "Monto del gasto en $";
@@ -268,7 +267,6 @@ document.addEventListener("DOMContentLoaded", () => {
             btnGuardarGas.style.backgroundColor = "#e91e63";
             btnGuardarGas.style.color = "#fff";
         } catch (error) {
-            console.error(error);
             Swal.fire({ title: "Error de Conexión", text: "Motivo: " + error.message, icon: "error" });
         } finally {
             btnGuardarGas.disabled = false;
@@ -413,7 +411,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("total-gas-bs").textContent = (totalUSDGastos * tasaBCV).toFixed(2);
     }
 
-
     // ==========================================
     // 2. MÓDULO: CREAR PEDIDO MANUAL (POS)
     // ==========================================
@@ -426,6 +423,54 @@ document.addEventListener("DOMContentLoaded", () => {
         btnPos.innerHTML = "📝 Crear Pedido Manual";
         let referencia = btnGastos ? btnGastos : btnPedidos;
         referencia.parentNode.insertBefore(btnPos, referencia.nextSibling);
+    }
+
+    // ==========================================
+    // NUEVO: BOTÓN COPIAR CATÁLOGO PARA WHATSAPP
+    // ==========================================
+    let btnCopiarCat = document.getElementById("btn-copiar-catalogo");
+    if (!btnCopiarCat && btnPedidos) {
+        btnCopiarCat = document.createElement("button");
+        btnCopiarCat.id = "btn-copiar-catalogo";
+        btnCopiarCat.className = btnPedidos.className; 
+        btnCopiarCat.style.cssText = "background-color: #25D366; color: white; padding: 15px; margin-top: 10px; margin-bottom: 10px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;";
+        btnCopiarCat.innerHTML = "📲 Copiar Catálogo para WhatsApp";
+        
+        // Lo insertamos justo debajo del botón de Pedido Manual (o donde termine la lista de botones)
+        let referenciaCopiar = btnPos ? btnPos : (btnGastos ? btnGastos : btnPedidos);
+        referenciaCopiar.parentNode.insertBefore(btnCopiarCat, referenciaCopiar.nextSibling);
+    }
+
+    if (btnCopiarCat) {
+        btnCopiarCat.addEventListener("click", () => {
+            let texto = `🌟 *Catálogo Pasión Paraguanera* 🌟\n*(Tasa BCV: Bs. ${tasaBCV.toFixed(2)})*\n\n`;
+            let hayProductos = false;
+            
+            // Recorremos los productos para armar el mensaje
+            productosActuales.forEach(prod => {
+                const stock = parseInt(prod.stock) || 0;
+                if (stock > 0) {
+                    hayProductos = true;
+                    const precioNum = typeof prod.precio === 'number' ? prod.precio : parseFloat(prod.precio || 0);
+                    const precioBs = (precioNum * tasaBCV).toFixed(2);
+                    texto += `🔹 *${prod.nombre}* - $${precioNum.toFixed(2)} *(Bs. ${precioBs})*\n`;
+                }
+            });
+
+            if (!hayProductos) {
+                Swal.fire({ title: "Catálogo vacío", text: "No hay productos con stock disponible para mostrar.", icon: "info" });
+                return;
+            }
+
+            texto += `\n🛒 *Para ver fotos y comprar directo entra aquí:*\n👉 https://pasion-paraguanera-app.vercel.app/`;
+
+            // Copiamos al portapapeles
+            navigator.clipboard.writeText(texto).then(() => {
+                Toast.fire({ icon: 'success', title: '¡Catálogo Copiado!', text: 'Ya puedes pegarlo en WhatsApp.' });
+            }).catch(err => {
+                Swal.fire({ title: "Error", text: "No se pudo copiar el texto automáticamente. Intenta de nuevo.", icon: "error" });
+            });
+        });
     }
 
     let moduloPos = document.getElementById("modulo-pos");
