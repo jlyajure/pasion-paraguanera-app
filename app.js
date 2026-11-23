@@ -3,6 +3,13 @@ import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, doc, del
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import Swal from 'https://cdn.jsdelivr.net/npm/sweetalert2@11/+esm';
 
+const USD = String.fromCharCode(36);
+
+function fmtUSD(valor) {
+    const num = typeof valor === 'number' ? valor : parseFloat(valor || 0);
+    return USD + (isNaN(num) ? 0 : num).toFixed(2);
+}
+
 const linkTema = document.createElement('link');
 linkTema.rel = 'stylesheet';
 linkTema.href = 'https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5/dark.css';
@@ -53,23 +60,23 @@ const auth = getAuth(app);
 const NUMERO_WHATSAPP = "584246669816";
 let productoEnEdicionId = null;
 let clienteEnEdicionId = null;
-let proveedorEnEdicionId = null; // NUEVO: Para editar proveedores
-let productosActuales = []; 
+let proveedorEnEdicionId = null;
+let productosActuales = [];
 let clientesActuales = [];
-let proveedoresActuales = []; // NUEVO: Lista de proveedores
+let proveedoresActuales = [];
 let pedidosActuales = [];
-let gastosActuales = []; 
-let carrito = []; 
-let carritoAdmin = []; 
+let gastosActuales = [];
+let carrito = [];
+let carritoAdmin = [];
 let tasaBCV = 1;
 
 let unsubClientes = null;
-let unsubProveedores = null; // NUEVO: Listener de proveedores
+let unsubProveedores = null;
 let unsubPedidos = null;
-let unsubGastos = null; 
+let unsubGastos = null;
 
 function formatearTelefono(tlf) {
-    let limpio = tlf.replace(/\D/g, '');
+    let limpio = String(tlf || '').replace(/\D/g, '');
     if (limpio.startsWith('0')) { return '58' + limpio.substring(1); }
     if (limpio.length === 10 && !limpio.startsWith('58')) { return '58' + limpio; }
     return limpio;
@@ -80,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const vistaAdmin = document.getElementById("vista-admin");
     const modalLogin = document.getElementById("modal-login");
     const tituloSecreto = document.getElementById("titulo-secreto");
-    
+
     const btnCerrarModal = document.getElementById("btn-cerrar-modal");
     const btnEntrar = document.getElementById("btn-entrar");
     const btnSalir = document.getElementById("btn-salir");
@@ -128,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
         prodCostoInput = document.createElement("input");
         prodCostoInput.type = "number";
         prodCostoInput.id = "prod-costo";
-        prodCostoInput.placeholder = "Costo de compra unitario ($)";
+        prodCostoInput.placeholder = "Costo de compra unitario (" + USD + ")";
         prodCostoInput.step = "0.01";
         prodCostoInput.min = "0";
         prodCostoInput.required = true;
@@ -137,13 +144,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================
-    // NUEVO MÓDULO: PROVEEDORES (CUENTAS POR PAGAR)
+    // MÓDULO: PROVEEDORES (CUENTAS POR PAGAR)
     // ==========================================
     let btnProveedores = document.getElementById("btn-proveedores");
     if (!btnProveedores && btnClientes) {
         btnProveedores = document.createElement("button");
         btnProveedores.id = "btn-proveedores";
-        btnProveedores.className = btnClientes.className; 
+        btnProveedores.className = btnClientes.className;
         btnProveedores.style.cssText = "background-color: #ff9800; color: #000; padding: 15px; margin-top: 10px; margin-bottom: 10px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;";
         btnProveedores.innerHTML = "🚚 Proveedores (Cuentas x Pagar)";
         btnClientes.parentNode.insertBefore(btnProveedores, btnClientes.nextSibling);
@@ -169,13 +176,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     <input type="text" id="prov-nombre" placeholder="Nombre del Proveedor o Empresa" required style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
                     <input type="text" id="prov-telefono" placeholder="Teléfono / WhatsApp" required style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
                     <input type="text" id="prov-concepto" placeholder="Concepto (Ej: Mercancía, Empaques, Servicios)" required style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
-                    <input type="number" id="prov-deuda" placeholder="Deuda actual en $" required min="0" step="0.01" value="0" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
+                    <input type="number" id="prov-deuda" placeholder="Deuda actual en &#36;" required min="0" step="0.01" value="0" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
                     <button type="submit" id="btn-guardar-prov" style="background-color: #ff9800; color: #000; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;">Registrar Proveedor</button>
                 </form>
             </div>
             <div id="lista-proveedores" style="display: flex; flex-direction: column; gap: 10px;"></div>
         `;
-        
+
         if (moduloClientes) {
             moduloClientes.parentNode.insertBefore(moduloProveedores, moduloClientes.nextSibling);
         }
@@ -187,17 +194,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const listaProveedoresDiv = document.getElementById("lista-proveedores");
 
     if (btnProveedores) {
-        btnProveedores.addEventListener("click", () => { 
-            vistaAdmin.classList.add("oculto"); 
-            moduloProveedores.classList.remove("oculto"); 
+        btnProveedores.addEventListener("click", () => {
+            vistaAdmin.classList.add("oculto");
+            moduloProveedores.classList.remove("oculto");
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     }
     if (btnVolverAdminProv) {
-        btnVolverAdminProv.addEventListener("click", () => { 
-            moduloProveedores.classList.add("oculto"); 
-            vistaAdmin.classList.remove("oculto"); 
-            if(proveedorEnEdicionId) {
+        btnVolverAdminProv.addEventListener("click", () => {
+            moduloProveedores.classList.add("oculto");
+            vistaAdmin.classList.remove("oculto");
+            if (proveedorEnEdicionId) {
                 formProveedor.reset();
                 document.getElementById("prov-deuda").value = "0";
                 proveedorEnEdicionId = null;
@@ -221,31 +228,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 deuda: parseFloat(document.getElementById("prov-deuda").value) || 0,
             };
 
-            if (proveedorEnEdicionId) { 
-                await updateDoc(doc(db, "proveedores", proveedorEnEdicionId), datosProv); 
-                proveedorEnEdicionId = null; 
-                btnGuardarProv.textContent = "¡Actualizado!"; 
-            } else { 
-                datosProv.fechaRegistro = serverTimestamp(); 
-                await addDoc(collection(db, "proveedores"), datosProv); 
-                btnGuardarProv.textContent = "¡Registrado!"; 
+            if (proveedorEnEdicionId) {
+                await updateDoc(doc(db, "proveedores", proveedorEnEdicionId), datosProv);
+                proveedorEnEdicionId = null;
+                btnGuardarProv.textContent = "¡Actualizado!";
+            } else {
+                datosProv.fechaRegistro = serverTimestamp();
+                await addDoc(collection(db, "proveedores"), datosProv);
+                btnGuardarProv.textContent = "¡Registrado!";
             }
-            
-            formProveedor.reset(); 
-            document.getElementById("prov-deuda").value = "0"; 
-            btnGuardarProv.disabled = false; 
-            btnGuardarProv.style.backgroundColor = "#ff9800"; 
+
+            formProveedor.reset();
+            document.getElementById("prov-deuda").value = "0";
+            btnGuardarProv.disabled = false;
+            btnGuardarProv.style.backgroundColor = "#ff9800";
             setTimeout(() => { btnGuardarProv.textContent = "Registrar Proveedor"; }, 2500);
-        } catch (error) { 
-            btnGuardarProv.disabled = false; 
-            btnGuardarProv.textContent = "Error"; 
-            setTimeout(() => { btnGuardarProv.textContent = textoOriginal; }, 3000); 
+        } catch (error) {
+            btnGuardarProv.disabled = false;
+            btnGuardarProv.textContent = "Error";
+            setTimeout(() => { btnGuardarProv.textContent = textoOriginal; }, 3000);
             Swal.fire({ title: "Error", text: "Motivo: " + error.message, icon: "error" });
         }
     });
 
     listaProveedoresDiv.addEventListener("click", (e) => {
-        if (e.target.closest(".btn-eliminar-prov")) { 
+        if (e.target.closest(".btn-eliminar-prov")) {
             Swal.fire({
                 title: '¿Eliminar proveedor?',
                 text: "Borrarás el registro de este proveedor.",
@@ -266,16 +273,16 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
         if (e.target.closest(".btn-editar-prov")) {
-            const id = e.target.closest(".btn-editar-prov").getAttribute("data-id"); 
+            const id = e.target.closest(".btn-editar-prov").getAttribute("data-id");
             const prov = proveedoresActuales.find(p => p.id === id);
             if (prov) {
-                document.getElementById("prov-nombre").value = prov.nombre; 
+                document.getElementById("prov-nombre").value = prov.nombre;
                 document.getElementById("prov-telefono").value = prov.telefono;
-                document.getElementById("prov-concepto").value = prov.concepto || ""; 
-                document.getElementById("prov-deuda").value = prov.deuda; 
+                document.getElementById("prov-concepto").value = prov.concepto || "";
+                document.getElementById("prov-deuda").value = prov.deuda;
                 proveedorEnEdicionId = id;
-                btnGuardarProv.textContent = "Actualizar Proveedor"; 
-                btnGuardarProv.style.backgroundColor = "#ffc107"; 
+                btnGuardarProv.textContent = "Actualizar Proveedor";
+                btnGuardarProv.style.backgroundColor = "#ffc107";
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
@@ -285,7 +292,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (prov) {
                 const montoActual = parseFloat(prov.deuda || 0);
                 Swal.fire({
-                    title: `Pago a ${prov.nombre}`, text: `Deuda actual: $${montoActual.toFixed(2)}`,
+                    title: "Pago a " + prov.nombre,
+                    text: "Deuda actual: " + fmtUSD(montoActual),
                     input: 'text',
                     inputPlaceholder: 'Ej: 50.00',
                     showCancelButton: true,
@@ -299,25 +307,90 @@ document.addEventListener("DOMContentLoaded", () => {
                             let nuevaDeuda = montoActual - abono;
                             if (nuevaDeuda <= 0) {
                                 nuevaDeuda = 0;
-                                Swal.fire({ icon: 'success', title: '¡Deuda saldada!', text: `No le debes nada a ${prov.nombre}.`, confirmButtonColor: '#ff9800' });
+                                Swal.fire({ icon: 'success', title: '¡Deuda saldada!', text: "No le debes nada a " + prov.nombre + ".", confirmButtonColor: '#ff9800' });
                             } else {
-                                Swal.fire({ icon: 'success', title: 'Pago registrado', text: `La nueva deuda es: $${nuevaDeuda.toFixed(2)}`, confirmButtonColor: '#ff9800' }); } try { await updateDoc(doc(db, "proveedores", id), { deuda: nuevaDeuda }); } catch (error) { Swal.fire({ title: "Error", text: "Motivo: " + error.message, icon: "error" }); } } else { Swal.fire({ title: "Monto inválido", text: "Por favor ingresa un monto mayor a 0.", icon: "warning" }); } } }); } } });  function renderizarProveedores() { if(!listaProveedoresDiv) return; listaProveedoresDiv.innerHTML = "";  let divResumenProv = document.getElementById("resumen-total-proveedores"); if (!divResumenProv) { divResumenProv = document.createElement("div"); divResumenProv.id = "resumen-total-proveedores"; divResumenProv.style.cssText = "background-color: #3e270b; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; border: 1px solid #ff9800;"; listaProveedoresDiv.parentNode.insertBefore(divResumenProv, listaProveedoresDiv); }  if (proveedoresActuales.length === 0) { divResumenProv.style.display = "none"; listaProveedoresDiv.innerHTML = "<p style='text-align:center; color:#aaa; width:100\%;'>No hay proveedores ni deudas registradas.</p>"; return; } else { divResumenProv.style.display = "block"; }  let totalCuentasPorPagar = 0;  proveedoresActuales.forEach((prov) => { const nombre = prov.nombre \vert{}\vert{} "Sin nombre"; const telefono = prov.telefono \vert{}\vert{} "Sin número"; const concepto = prov.concepto \vert{}\vert{} ""; const deudaNum = parseFloat(prov.deuda \vert{}\vert{} 0);  totalCuentasPorPagar += deudaNum;  const divProv = document.createElement("div"); divProv.classList.add("item-producto"); divProv.style.borderTopColor = deudaNum > 0 ? "#f44336" : "#4caf50";  let seccionDeuda = deudaNum > 0 ? `<div style="background-color: #421818; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #ff6b6b; font-weight: bold; font-size: 14px;">Debes: $${deudaNum.toFixed(2)}</span></div>` 
-                : `<div style="background-color: #1b3a20; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #81c784; font-weight: bold; font-size: 14px;">Proveedor Solvente</span></div>`;
-            
-            let btnAbonar = deudaNum > 0 ? `<button class="btn-abonar-prov" data-id="${prov.id}" style="width: 100%; margin-bottom: 10px; background-color: #ff9800; color: #000; font-size: 13px; padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">💵 Registrar Pago al Proveedor</button>` : "";
-            
-            divProv.innerHTML = `
-                <div style="display: flex; flex-direction: column; height: 100%; width: 100%; justify-content: space-between;">
-                    <div style="text-align: center; margin-bottom: 15px;">
-                        <h4 style="margin: 0 0 5px 0; color: #f1faee; font-size: 16px;">🚚 ${nombre}</h4>
-                        <p style="margin: 0 0 5px 0; font-size: 13px; color: #bbb;">📞 ${telefono}</p>
-                        <p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">📦 Concepto: ${concepto}</p>${seccionDeuda}
-                    </div>
-                    <div style="width: 100%;">
-                        ${btnAbonar}
-                        <div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;">
-                            <button class="btn-editar-prov" data-id="${prov.id}" style="background: #ffc107; color: #000; width: 48%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">✏️ Editar</button>
-                            <button class="btn-eliminar-prov" data-id="${prov.id}" style="background: #f44336; color: #fff; width: 48\%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">🗑️ Eliminar</button> </div> </div> </div>`; listaProveedoresDiv.appendChild(divProv); });  const totalDeudaBs = (totalCuentasPorPagar * tasaBCV).toFixed(2); divResumenProv.innerHTML = `<h3 style="margin: 0 0 5px 0; color: #ff9800; font-size: 16px;">🏢 Total Cuentas por Pagar (Proveedores)</h3><span style="font-size: 22px; color: #fff; font-weight: bold;">$${totalCuentasPorPagar.toFixed(2)}</span> <span style="color: #bbb; font-size: 14px;">| Bs. ${totalDeudaBs}</span>`;
+                                Swal.fire({ icon: 'success', title: 'Pago registrado', text: "La nueva deuda es: " + fmtUSD(nuevaDeuda), confirmButtonColor: '#ff9800' });
+                            }
+                            try {
+                                await updateDoc(doc(db, "proveedores", id), { deuda: nuevaDeuda });
+                            } catch (error) {
+                                Swal.fire({ title: "Error", text: "Motivo: " + error.message, icon: "error" });
+                            }
+                        } else {
+                            Swal.fire({ title: "Monto inválido", text: "Por favor ingresa un monto mayor a 0.", icon: "warning" });
+                        }
+                    }
+                });
+            }
+        }
+    });
+
+    function renderizarProveedores() {
+        if (!listaProveedoresDiv) return;
+        listaProveedoresDiv.innerHTML = "";
+
+        let divResumenProv = document.getElementById("resumen-total-proveedores");
+        if (!divResumenProv) {
+            divResumenProv = document.createElement("div");
+            divResumenProv.id = "resumen-total-proveedores";
+            divResumenProv.style.cssText = "background-color: #3e270b; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; border: 1px solid #ff9800;";
+            listaProveedoresDiv.parentNode.insertBefore(divResumenProv, listaProveedoresDiv);
+        }
+
+        if (proveedoresActuales.length === 0) {
+            divResumenProv.style.display = "none";
+            listaProveedoresDiv.innerHTML = "<p style='text-align:center; color:#aaa; width:100%;'>No hay proveedores ni deudas registradas.</p>";
+            return;
+        } else {
+            divResumenProv.style.display = "block";
+        }
+
+        let totalCuentasPorPagar = 0;
+
+        proveedoresActuales.forEach((prov) => {
+            const nombre = prov.nombre || "Sin nombre";
+            const telefono = prov.telefono || "Sin número";
+            const concepto = prov.concepto || "";
+            const deudaNum = parseFloat(prov.deuda || 0);
+
+            totalCuentasPorPagar += deudaNum;
+
+            const divProv = document.createElement("div");
+            divProv.classList.add("item-producto");
+            divProv.style.borderTopColor = deudaNum > 0 ? "#f44336" : "#4caf50";
+
+            let seccionDeuda = deudaNum > 0
+                ? '<div style="background-color: #421818; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #ff6b6b; font-weight: bold; font-size: 14px;">Debes: ' + fmtUSD(deudaNum) + '</span></div>'
+                : '<div style="background-color: #1b3a20; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #81c784; font-weight: bold; font-size: 14px;">Proveedor Solvente</span></div>';
+
+            let btnAbonar = deudaNum > 0
+                ? '<button class="btn-abonar-prov" data-id="' + prov.id + '" style="width: 100%; margin-bottom: 10px; background-color: #ff9800; color: #000; font-size: 13px; padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">💵 Registrar Pago al Proveedor</button>'
+                : "";
+
+            divProv.innerHTML =
+                '<div style="display: flex; flex-direction: column; height: 100%; width: 100%; justify-content: space-between;">' +
+                    '<div style="text-align: center; margin-bottom: 15px;">' +
+                        '<h4 style="margin: 0 0 5px 0; color: #f1faee; font-size: 16px;">🚚 ' + nombre + '</h4>' +
+                        '<p style="margin: 0 0 5px 0; font-size: 13px; color: #bbb;">📞 ' + telefono + '</p>' +
+                        '<p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">📦 Concepto: ' + concepto + '</p>' +
+                        seccionDeuda +
+                    '</div>' +
+                    '<div style="width: 100%;">' +
+                        btnAbonar +
+                        '<div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;">' +
+                            '<button class="btn-editar-prov" data-id="' + prov.id + '" style="background: #ffc107; color: #000; width: 48%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">✏️ Editar</button>' +
+                            '<button class="btn-eliminar-prov" data-id="' + prov.id + '" style="background: #f44336; color: #fff; width: 48%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">🗑️ Eliminar</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            listaProveedoresDiv.appendChild(divProv);
+        });
+
+        const totalDeudaBs = (totalCuentasPorPagar * tasaBCV).toFixed(2);
+        divResumenProv.innerHTML =
+            '<h3 style="margin: 0 0 5px 0; color: #ff9800; font-size: 16px;">🏢 Total Cuentas por Pagar (Proveedores)</h3>' +
+            '<span style="font-size: 22px; color: #fff; font-weight: bold;">' + fmtUSD(totalCuentasPorPagar) + '</span> ' +
+            '<span style="color: #bbb; font-size: 14px;">| Bs. ' + totalDeudaBs + '</span>';
     }
 
     // ==========================================
@@ -327,7 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!btnGastos && btnPedidos) {
         btnGastos = document.createElement("button");
         btnGastos.id = "btn-gastos";
-        btnGastos.className = btnPedidos.className; 
+        btnGastos.className = btnPedidos.className;
         btnGastos.style.cssText = "background-color: #e91e63; color: white; padding: 15px; margin-top: 10px; margin-bottom: 10px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;";
         btnGastos.innerHTML = "📉 Gastos e Inventario Interno";
         btnPedidos.parentNode.insertBefore(btnGastos, btnPedidos.nextSibling);
@@ -354,13 +427,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     <select id="gas-producto" required style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
                         <option value="ninguno">🔴 Gasto Externo (Solo Dinero, No afecta inventario)</option>
                     </select>
-                    <input type="number" id="gas-monto-cantidad" placeholder="Monto del gasto en $" required min="0.01" step="0.01" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
+                    <input type="number" id="gas-monto-cantidad" placeholder="Monto del gasto en &#36;" required min="0.01" step="0.01" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
                     <button type="submit" id="btn-guardar-gas" style="background-color: #e91e63; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;">Registrar Gasto (Solo Dinero) 💸</button>
                 </form>
             </div>
             <div id="lista-gastos" style="display: flex; flex-direction: column; gap: 10px;"></div>
         `;
-        
+
         if (moduloPedidos) {
             moduloPedidos.parentNode.insertBefore(moduloGastos, moduloPedidos.nextSibling);
         } else {
@@ -376,26 +449,27 @@ document.addEventListener("DOMContentLoaded", () => {
     const listaGastosDiv = document.getElementById("lista-gastos");
 
     if (btnGastos) {
-        btnGastos.addEventListener("click", () => { 
-            vistaAdmin.classList.add("oculto"); 
-            moduloGastos.classList.remove("oculto"); 
+        btnGastos.addEventListener("click", () => {
+            vistaAdmin.classList.add("oculto");
+            moduloGastos.classList.remove("oculto");
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     }
     if (btnVolverAdminGas) {
-        btnVolverAdminGas.addEventListener("click", () => { 
-            moduloGastos.classList.add("oculto"); 
-            vistaAdmin.classList.remove("oculto"); 
+        btnVolverAdminGas.addEventListener("click", () => {
+            moduloGastos.classList.add("oculto");
+            vistaAdmin.classList.remove("oculto");
         });
     }
 
     gasProducto.addEventListener("change", () => {
-        if(gasProducto.value === "ninguno") {
-            gasMontoCantidad.placeholder = "Monto del gasto en $";
+        if (gasProducto.value === "ninguno") {
+            gasMontoCantidad.placeholder = "Monto del gasto en " + USD;
             gasMontoCantidad.step = "0.01";
             gasMontoCantidad.min = "0.01";
             btnGuardarGas.textContent = "Registrar Gasto (Solo Dinero) 💸";
             btnGuardarGas.style.backgroundColor = "#e91e63";
+            btnGuardarGas.style.color = "#fff";
         } else {
             gasMontoCantidad.placeholder = "Cantidad a restar del inventario (Unidades)";
             gasMontoCantidad.step = "1";
@@ -434,11 +508,37 @@ document.addEventListener("DOMContentLoaded", () => {
                 const stockDisponible = parseInt(prod.stock) || 0;
 
                 if (cantidad > stockDisponible) {
-                    Swal.fire({ title: "Stock insuficiente", text: `Solo quedan ${stockDisponible} unidades de ${prod.nombre}.`, icon: "warning" }); btnGuardarGas.disabled = false; btnGuardarGas.textContent = textoOriginal; return; }  totalUSD = cantidad * parseFloat(prod.precio \vert{}\vert{} 0);  await addDoc(collection(db, "gastos"), { concepto: concepto, tipo: "Retiro de Inventario", productoId: prod.id, productoNombre: prod.nombre, cantidad: cantidad, totalUSD: totalUSD, fecha: serverTimestamp() });  await updateDoc(doc(db, "productos", prod.id), { stock: increment(-cantidad) }); }  Toast.fire({ icon: 'success', title: 'Gasto Registrado', text: `Contabilizado: $${totalUSD.toFixed(2)}`
+                    Swal.fire({ title: "Stock insuficiente", text: "Solo quedan " + stockDisponible + " unidades de " + prod.nombre + ".", icon: "warning" });
+                    btnGuardarGas.disabled = false;
+                    btnGuardarGas.textContent = textoOriginal;
+                    return;
+                }
+
+                totalUSD = cantidad * parseFloat(prod.precio || 0);
+
+                await addDoc(collection(db, "gastos"), {
+                    concepto: concepto,
+                    tipo: "Retiro de Inventario",
+                    productoId: prod.id,
+                    productoNombre: prod.nombre,
+                    cantidad: cantidad,
+                    totalUSD: totalUSD,
+                    fecha: serverTimestamp()
+                });
+
+                await updateDoc(doc(db, "productos", prod.id), {
+                    stock: increment(-cantidad)
+                });
+            }
+
+            Toast.fire({
+                icon: 'success',
+                title: 'Gasto Registrado',
+                text: "Contabilizado: " + fmtUSD(totalUSD)
             });
-            
+
             formGasto.reset();
-            gasMontoCantidad.placeholder = "Monto del gasto en $";
+            gasMontoCantidad.placeholder = "Monto del gasto en " + USD;
             gasMontoCantidad.step = "0.01";
             gasMontoCantidad.min = "0.01";
             btnGuardarGas.textContent = "Registrar Gasto (Solo Dinero) 💸";
@@ -487,49 +587,40 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function renderizarGastos() {
-        if(!listaGastosDiv) return;
+        if (!listaGastosDiv) return;
 
         let divFiltrosGas = document.getElementById("contenedor-filtros-gastos");
         if (!divFiltrosGas) {
             divFiltrosGas = document.createElement("div");
             divFiltrosGas.id = "contenedor-filtros-gastos";
             divFiltrosGas.style.cssText = "background-color: #33151d; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #e91e63; display: flex; flex-direction: column; gap: 10px;";
-            
+
             const currentYear = new Date().getFullYear();
-            let yearOptions = `<option value="todos">Todos los años</option>`;
-            for(let y = 2024; y <= currentYear + 2; y++) {
-                yearOptions += `<option value="${y}">${y}</option>`;
+            let yearOptions = '<option value="todos">Todos los años</option>';
+            for (let y = 2024; y <= currentYear + 2; y++) {
+                yearOptions += '<option value="' + y + '">' + y + '</option>';
             }
 
-            divFiltrosGas.innerHTML = `
-                <div style="display: flex; gap: 10px; justify-content: space-between;">
-                    <select id="filtro-mes-gas" style="width: 48%; padding: 8px; background: #222; color: white; border: 1px solid #e91e63; border-radius: 4px; font-size: 14px;">
-                        <option value="todos">Todos los meses</option>
-                        <option value="1">Enero</option>
-                        <option value="2">Febrero</option>
-                        <option value="3">Marzo</option>
-                        <option value="4">Abril</option>
-                        <option value="5">Mayo</option>
-                        <option value="6">Junio</option>
-                        <option value="7">Julio</option>
-                        <option value="8">Agosto</option>
-                        <option value="9">Septiembre</option>
-                        <option value="10">Octubre</option>
-                        <option value="11">Noviembre</option>
-                        <option value="12">Diciembre</option>
-                    </select>
-                    <select id="filtro-anio-gas" style="width: 48%; padding: 8px; background: #222; color: white; border: 1px solid #e91e63; border-radius: 4px; font-size: 14px;">
-                        ${yearOptions}
-                    </select>
-                </div>
-                <div style="text-align: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">
-                    <h3 style="margin: 0 0 5px 0; color: #ff80ab; font-size: 16px;">💰 Total Gastos del Periodo</h3>
-                    <span style="font-size: 22px; color: #fff; font-weight: bold;" id="total-gas-usd">$0.00</span> 
-                    <span style="color: #bbb; font-size: 14px;">| Bs. <span id="total-gas-bs">0.00</span></span>
-                </div>
-            `;
+            divFiltrosGas.innerHTML =
+                '<div style="display: flex; gap: 10px; justify-content: space-between;">' +
+                    '<select id="filtro-mes-gas" style="width: 48%; padding: 8px; background: #222; color: white; border: 1px solid #e91e63; border-radius: 4px; font-size: 14px;">' +
+                        '<option value="todos">Todos los meses</option>' +
+                        '<option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option><option value="4">Abril</option>' +
+                        '<option value="5">Mayo</option><option value="6">Junio</option><option value="7">Julio</option><option value="8">Agosto</option>' +
+                        '<option value="9">Septiembre</option><option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>' +
+                    '</select>' +
+                    '<select id="filtro-anio-gas" style="width: 48%; padding: 8px; background: #222; color: white; border: 1px solid #e91e63; border-radius: 4px; font-size: 14px;">' +
+                        yearOptions +
+                    '</select>' +
+                '</div>' +
+                '<div style="text-align: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">' +
+                    '<h3 style="margin: 0 0 5px 0; color: #ff80ab; font-size: 16px;">💰 Total Gastos del Periodo</h3>' +
+                    '<span style="font-size: 22px; color: #fff; font-weight: bold;" id="total-gas-usd">&#36;0.00</span> ' +
+                    '<span style="color: #bbb; font-size: 14px;">| Bs. <span id="total-gas-bs">0.00</span></span>' +
+                '</div>';
+
             listaGastosDiv.parentNode.insertBefore(divFiltrosGas, listaGastosDiv);
-            
+
             document.getElementById("filtro-mes-gas").value = (new Date().getMonth() + 1).toString();
             document.getElementById("filtro-anio-gas").value = currentYear.toString();
 
@@ -548,10 +639,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const fechaObj = new Date(gasto.fecha.toMillis());
             const mesGasto = (fechaObj.getMonth() + 1).toString();
             const anioGasto = fechaObj.getFullYear().toString();
-            
+
             const pasaMes = (mesSel === "todos" || mesSel === mesGasto);
             const pasaAnio = (anioSel === "todos" || anioSel === anioGasto);
-            
+
             return pasaMes && pasaAnio;
         });
 
@@ -562,29 +653,29 @@ document.addEventListener("DOMContentLoaded", () => {
                 const totalUSD = parseFloat(gasto.totalUSD || 0);
                 totalUSDGastos += totalUSD;
                 const fechaStr = gasto.fecha ? new Date(gasto.fecha.toMillis()).toLocaleString() : "Fecha desconocida";
-                
+
                 const div = document.createElement("div");
                 div.style.cssText = "background-color: #222; padding: 12px; border-radius: 6px; border-left: 4px solid #e91e63; margin-bottom: 8px;";
-                
-                let badgeTipo = gasto.tipo === "Externo" 
-                    ? `<span style="background: #555; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Gasto Externo/Efectivo</span>`
-                    : `<span style="background: #e91e63; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Uso Inventario: ${gasto.cantidad}x${gasto.productoNombre}</span>`;
 
-                div.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                        <strong style="color: white; font-size: 15px;">${gasto.concepto}</strong>
-                        <button class="btn-eliminar-gas" data-id="${gasto.id}" data-tipo="${gasto.tipo}" data-prodid="${gasto.productoId}" data-cant="${gasto.cantidad}" style="background: none; border: none; cursor: pointer; font-size: 18px;">🗑️</button>
-                    </div>
-                    <div style="margin-bottom: 8px;">${badgeTipo}</div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; color: #bbb; font-size: 12px;">
-                        <span>${fechaStr}</span> <strong style="color: #ff80ab; font-size: 15px;">-$${totalUSD.toFixed(2)}</strong>
-                    </div>
-                `;
+                let badgeTipo = gasto.tipo === "Externo"
+                    ? '<span style="background: #555; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Gasto Externo/Efectivo</span>'
+                    : '<span style="background: #e91e63; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Uso Inventario: ' + gasto.cantidad + 'x ' + gasto.productoNombre + '</span>';
+
+                div.innerHTML =
+                    '<div style="display: flex; justify-content: space-between; margin-bottom: 5px;">' +
+                        '<strong style="color: white; font-size: 15px;">' + gasto.concepto + '</strong>' +
+                        '<button class="btn-eliminar-gas" data-id="' + gasto.id + '" data-tipo="' + gasto.tipo + '" data-prodid="' + (gasto.productoId || '') + '" data-cant="' + (gasto.cantidad || 0) + '" style="background: none; border: none; cursor: pointer; font-size: 18px;">🗑️</button>' +
+                    '</div>' +
+                    '<div style="margin-bottom: 8px;">' + badgeTipo + '</div>' +
+                    '<div style="display: flex; justify-content: space-between; align-items: center; color: #bbb; font-size: 12px;">' +
+                        '<span>' + fechaStr + '</span>' +
+                        '<strong style="color: #ff80ab; font-size: 15px;">-' + fmtUSD(totalUSD) + '</strong>' +
+                    '</div>';
                 listaGastosDiv.appendChild(div);
             });
         }
 
-        document.getElementById("total-gas-usd").textContent = "$" + totalUSDGastos.toFixed(2);
+        document.getElementById("total-gas-usd").textContent = fmtUSD(totalUSDGastos);
         document.getElementById("total-gas-bs").textContent = (totalUSDGastos * tasaBCV).toFixed(2);
     }
 
@@ -595,7 +686,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!btnPos && btnPedidos) {
         btnPos = document.createElement("button");
         btnPos.id = "btn-pos";
-        btnPos.className = btnPedidos.className; 
+        btnPos.className = btnPedidos.className;
         btnPos.style.cssText = "background-color: #00bcd4; color: white; padding: 15px; margin-top: 10px; margin-bottom: 10px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;";
         btnPos.innerHTML = "📝 Crear Pedido Manual";
         let referencia = btnGastos ? btnGastos : btnPedidos;
@@ -609,7 +700,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!btnCopiarCat && btnPedidos) {
         btnCopiarCat = document.createElement("button");
         btnCopiarCat.id = "btn-copiar-catalogo";
-        btnCopiarCat.className = btnPedidos.className; 
+        btnCopiarCat.className = btnPedidos.className;
         btnCopiarCat.style.cssText = "background-color: #25D366; color: white; padding: 15px; margin-top: 10px; margin-bottom: 10px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;";
         btnCopiarCat.innerHTML = "📲 Copiar Catálogo para WhatsApp";
         let referenciaCopiar = btnPos ? btnPos : (btnGastos ? btnGastos : btnPedidos);
@@ -618,7 +709,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (btnCopiarCat) {
         btnCopiarCat.addEventListener("click", () => {
-            let texto = `🌟 *Catálogo Pasión Paraguanera* 🌟\n*(Tasa BCV: Bs. ${tasaBCV.toFixed(2)})*\n\n`;
+            let texto = "🌟 *Catálogo Pasión Paraguanera* 🌟\n*(Tasa BCV: Bs. " + tasaBCV.toFixed(2) + ")*\n\n";
             let hayProductos = false;
             productosActuales.forEach(prod => {
                 const stock = parseInt(prod.stock) || 0;
@@ -626,13 +717,19 @@ document.addEventListener("DOMContentLoaded", () => {
                     hayProductos = true;
                     const precioNum = typeof prod.precio === 'number' ? prod.precio : parseFloat(prod.precio || 0);
                     const precioBs = (precioNum * tasaBCV).toFixed(2);
-                    texto += `🔹 *${prod.nombre}* -$${precioNum.toFixed(2)} *(Bs.${precioBs})*\n`;
+                    texto += "🔹 *" + prod.nombre + "* - " + fmtUSD(precioNum) + " *(Bs. " + precioBs + ")*\n";
                 }
             });
-            if (!hayProductos) { Swal.fire({ title: "Catálogo vacío", text: "No hay productos con stock disponible para mostrar.", icon: "info" }); return; }
-            texto += `\n🛒 *Para ver fotos y comprar directo entra aquí:*\n👉 https://pasion-paraguanera-app.vercel.app/`;
-            navigator.clipboard.writeText(texto).then(() => { Toast.fire({ icon: 'success', title: '¡Catálogo Copiado!', text: 'Ya puedes pegarlo en WhatsApp.' });
-            }).catch(err => { Swal.fire({ title: "Error", text: "No se pudo copiar el texto automáticamente. Intenta de nuevo.", icon: "error" }); });
+            if (!hayProductos) {
+                Swal.fire({ title: "Catálogo vacío", text: "No hay productos con stock disponible para mostrar.", icon: "info" });
+                return;
+            }
+            texto += "\n🛒 *Para ver fotos y comprar directo entra aquí:*\n👉 https://pasion-paraguanera-app.vercel.app/";
+            navigator.clipboard.writeText(texto).then(() => {
+                Toast.fire({ icon: 'success', title: '¡Catálogo Copiado!', text: 'Ya puedes pegarlo en WhatsApp.' });
+            }).catch(() => {
+                Swal.fire({ title: "Error", text: "No se pudo copiar el texto automáticamente. Intenta de nuevo.", icon: "error" });
+            });
         });
     }
 
@@ -657,4 +754,1298 @@ document.addEventListener("DOMContentLoaded", () => {
                     <span style="font-size: 11px; background: #2e294e; color: #d1c4e9; padding: 2px 8px; border-radius: 10px;">IA</span>
                 </h3>
                 <p style="font-size: 12px; color: #bbb; margin-top: 0; margin-bottom: 10px;">Pega el mensaje del cliente y la IA rellenará los datos y el carrito automáticamente.</p>
-                <textarea id="pos-ia-texto" rows="3" placeholder="Ej: Hola, soy María (0412
+                <textarea id="pos-ia-texto" rows="3" placeholder="Ej: Hola, soy María (0412-1234567), apártame 2 cocuy clarito y 1 casabe, envío a Puerta Maraven..." style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin-bottom: 10px; box-sizing: border-box; font-family: inherit; resize: vertical;"></textarea>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" id="pos-btn-ia" style="flex: 1; background-color: #7c4dff; color: white; padding: 11px; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; cursor: pointer;">✨ Armar Pedido con IA</button>
+                    <button type="button" id="pos-btn-ia-limpiar" style="background-color: #333; color: #ccc; padding: 11px 14px; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Limpiar</button>
+                </div>
+            </div>
+
+            <div style="background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333;">
+                <h3 style="color: #fff; margin-top: 0; font-size: 15px; border-bottom: 1px solid #333; padding-bottom: 8px;">1. Datos del Cliente</h3>
+                <select id="pos-select-cliente" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin-bottom: 10px;">
+                    <option value="">-- Buscar en directorio (Opcional) --</option>
+                </select>
+                <input type="text" id="pos-nombre" placeholder="Nombre y Apellido" required style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin-bottom: 10px; box-sizing: border-box;">
+                <input type="text" id="pos-telefono" placeholder="WhatsApp (Ej: 58412...)" required style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin-bottom: 10px; box-sizing: border-box;">
+                <input type="text" id="pos-direccion" placeholder="Dirección (Opcional)" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; box-sizing: border-box;">
+            </div>
+
+            <div style="background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333;">
+                <h3 style="color: #fff; margin-top: 0; font-size: 15px; border-bottom: 1px solid #333; padding-bottom: 8px;">2. Agregar Productos</h3>
+                <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                    <select id="pos-select-producto" style="flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
+                        <option value="">Selecciona producto...</option>
+                    </select>
+                    <input type="number" id="pos-cantidad" value="1" min="1" style="width: 60px; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; text-align: center;">
+                    <button id="pos-btn-agregar" style="background-color: #4caf50; color: white; border: none; border-radius: 4px; padding: 0 15px; font-weight: bold; cursor: pointer; font-size: 20px;">+</button>
+                </div>
+                <div id="pos-lista-carrito" style="margin-bottom: 15px; min-height: 50px;">
+                    <p style="color: #666; font-size: 13px; text-align: center; padding-top: 15px;">El carrito interno está vacío.</p>
+                </div>
+                <div style="background-color: #0b2126; padding: 10px; border-radius: 4px; text-align: right; border: 1px solid #00bcd4;">
+                    <span style="color: #aaa; font-size: 13px;">Total del Pedido:</span>
+                    <strong style="color: #00bcd4; font-size: 18px; margin-left: 10px;">&#36;<span id="pos-total-usd">0.00</span></strong>
+                </div>
+            </div>
+
+            <div style="background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333;">
+                <h3 style="color: #fff; margin-top: 0; font-size: 15px; border-bottom: 1px solid #333; padding-bottom: 8px;">3. Finalizar</h3>
+                <select id="pos-tipo-pago" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin-bottom: 15px;">
+                    <option value="contado">Pago al Contado (Completo)</option>
+                    <option value="credito">Pago a Crédito (Genera Deuda)</option>
+                </select>
+                <button id="pos-btn-guardar" style="width: 100%; background-color: #00bcd4; color: white; padding: 15px; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer;">Procesar Pedido Manual</button>
+            </div>
+        `;
+        if (moduloPedidos) moduloPedidos.parentNode.insertBefore(moduloPos, moduloPedidos.nextSibling);
+    }
+
+    const btnVolverAdminPos = document.getElementById("btn-volver-admin-pos");
+    const posIaTexto = document.getElementById("pos-ia-texto");
+    const posBtnIa = document.getElementById("pos-btn-ia");
+    const posBtnIaLimpiar = document.getElementById("pos-btn-ia-limpiar");
+    const posSelectCliente = document.getElementById("pos-select-cliente");
+    const posNombre = document.getElementById("pos-nombre");
+    const posTelefono = document.getElementById("pos-telefono");
+    const posDireccion = document.getElementById("pos-direccion");
+    const posSelectProducto = document.getElementById("pos-select-producto");
+    const posCantidad = document.getElementById("pos-cantidad");
+    const posBtnAgregar = document.getElementById("pos-btn-agregar");
+    const posListaCarrito = document.getElementById("pos-lista-carrito");
+    const posTotalUsd = document.getElementById("pos-total-usd");
+    const posTipoPago = document.getElementById("pos-tipo-pago");
+    const posBtnGuardar = document.getElementById("pos-btn-guardar");
+
+    if (posBtnIaLimpiar && posIaTexto) {
+        posBtnIaLimpiar.addEventListener("click", () => {
+            posIaTexto.value = "";
+        });
+    }
+
+    if (posBtnIa) {
+        posBtnIa.addEventListener("click", async () => {
+            const mensaje = posIaTexto ? posIaTexto.value.trim() : "";
+            if (!mensaje) {
+                Swal.fire({ title: "Mensaje vacío", text: "Pega primero el mensaje de WhatsApp del cliente.", icon: "warning" });
+                return;
+            }
+            if (productosActuales.length === 0) {
+                Swal.fire({ title: "Sin productos", text: "Aún no hay productos cargados en el inventario.", icon: "warning" });
+                return;
+            }
+
+            posBtnIa.disabled = true;
+            const textoOriginalBtn = posBtnIa.textContent;
+            posBtnIa.textContent = "⏳ Analizando mensaje...";
+
+            try {
+                const catalogoParaIa = productosActuales.map(p => ({
+                    id: p.id,
+                    nombre: p.nombre,
+                    precio: typeof p.precio === 'number' ? p.precio : parseFloat(p.precio || 0),
+                    stock: parseInt(p.stock) || 0
+                }));
+
+                const respuesta = await fetch("/api/pedido-ia", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ mensaje: mensaje, productos: catalogoParaIa })
+                });
+
+                const resultado = await respuesta.json();
+
+                if (!respuesta.ok) {
+                    throw new Error(resultado.error || "No se pudo procesar el mensaje con la IA.");
+                }
+
+                if (resultado.cliente) {
+                    if (resultado.cliente.nombre) posNombre.value = resultado.cliente.nombre;
+                    if (resultado.cliente.telefono) posTelefono.value = resultado.cliente.telefono;
+                    if (resultado.cliente.direccion) posDireccion.value = resultado.cliente.direccion;
+
+                    if (resultado.cliente.telefono) {
+                        const tlfBuscado = formatearTelefono(resultado.cliente.telefono);
+                        const cliExistente = clientesActuales.find(c => formatearTelefono(c.telefono || "") === tlfBuscado);
+                        if (cliExistente) {
+                            posSelectCliente.value = cliExistente.id;
+                            if (!posNombre.value && cliExistente.nombre) posNombre.value = cliExistente.nombre;
+                            if (!posDireccion.value && cliExistente.direccion) posDireccion.value = cliExistente.direccion;
+                        }
+                    }
+                }
+
+                posTipoPago.value = resultado.tipoPago === "credito" ? "credito" : "contado";
+
+                carritoAdmin = [];
+                const avisosStock = [];
+
+                if (Array.isArray(resultado.items)) {
+                    resultado.items.forEach(itemIa => {
+                        const prodDb = productosActuales.find(p => p.id === itemIa.id);
+                        if (!prodDb) return;
+
+                        const stockDisp = parseInt(prodDb.stock) || 0;
+                        const cantPedida = Math.max(1, parseInt(itemIa.cantidad) || 1);
+
+                        if (stockDisp <= 0) {
+                            avisosStock.push('🚫 "' + prodDb.nombre + '" está agotado (pidió ' + cantPedida + ').');
+                            return;
+                        }
+
+                        if (cantPedida > stockDisp) {
+                            carritoAdmin.push(Object.assign({}, prodDb, { cantidad: stockDisp }));
+                            avisosStock.push('⚠️ "' + prodDb.nombre + '": pidió ' + cantPedida + ', se ajustó al stock disponible (' + stockDisp + ').');
+                        } else {
+                            carritoAdmin.push(Object.assign({}, prodDb, { cantidad: cantPedida }));
+                        }
+                    });
+                }
+
+                renderizarCarritoAdmin();
+
+                const notasExtra = [];
+                if (resultado.observaciones && resultado.observaciones.trim()) {
+                    notasExtra.push("📝 " + resultado.observaciones.trim());
+                }
+                if (avisosStock.length > 0) {
+                    avisosStock.forEach(a => notasExtra.push(a));
+                }
+
+                if (notasExtra.length > 0) {
+                    const htmlNotas = notasExtra.map(n => '<p style="margin:6px 0;">' + n + '</p>').join("");
+                    Swal.fire({
+                        icon: carritoAdmin.length > 0 ? "info" : "warning",
+                        title: carritoAdmin.length > 0 ? "Pedido armado con observaciones" : "Revisa el mensaje",
+                        html: '<div style="text-align:left; font-size:14px; line-height:1.5;">' + htmlNotas + '</div>',
+                        confirmButtonColor: "#7c4dff"
+                    });
+                } else if (carritoAdmin.length > 0) {
+                    Toast.fire({
+                        icon: "success",
+                        title: "¡Pedido armado!",
+                        text: "Revisa los datos y dale a Procesar Pedido Manual."
+                    });
+                } else {
+                    Swal.fire({
+                        icon: "warning",
+                        title: "No se detectaron productos",
+                        text: "La IA no encontró productos del catálogo en ese mensaje. Puedes agregarlos manualmente abajo.",
+                        confirmButtonColor: "#7c4dff"
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    title: "Error con el Asistente IA",
+                    text: error.message,
+                    icon: "error",
+                    confirmButtonColor: "#7c4dff"
+                });
+            } finally {
+                posBtnIa.disabled = false;
+                posBtnIa.textContent = textoOriginalBtn;
+            }
+        });
+    }
+
+    if (btnPos) {
+        btnPos.addEventListener("click", () => {
+            vistaAdmin.classList.add("oculto");
+            moduloPos.classList.remove("oculto");
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            actualizarListasPos();
+        });
+    }
+    if (btnVolverAdminPos) {
+        btnVolverAdminPos.addEventListener("click", () => {
+            moduloPos.classList.add("oculto");
+            vistaAdmin.classList.remove("oculto");
+        });
+    }
+
+    function actualizarListasPos() {
+        if (!posSelectCliente) return;
+        const valCli = posSelectCliente.value;
+        posSelectCliente.innerHTML = '<option value="">-- Buscar en directorio (Opcional) --</option>';
+        clientesActuales.forEach(c => {
+            posSelectCliente.innerHTML += '<option value="' + c.id + '">' + c.nombre + ' (' + c.telefono + ')</option>';
+        });
+        if (Array.from(posSelectCliente.options).some(opt => opt.value === valCli)) posSelectCliente.value = valCli;
+
+        const valProd = posSelectProducto.value;
+        posSelectProducto.innerHTML = '<option value="">Selecciona producto...</option>';
+        productosActuales.forEach(p => {
+            if (parseInt(p.stock) > 0) {
+                posSelectProducto.innerHTML += '<option value="' + p.id + '">' + p.nombre + ' (' + fmtUSD(p.precio) + ') - Stock: ' + p.stock + '</option>';
+            }
+        });
+        if (Array.from(posSelectProducto.options).some(opt => opt.value === valProd)) posSelectProducto.value = valProd;
+    }
+
+    if (posSelectCliente) {
+        posSelectCliente.addEventListener("change", () => {
+            if (posSelectCliente.value) {
+                const cli = clientesActuales.find(c => c.id === posSelectCliente.value);
+                if (cli) {
+                    posNombre.value = cli.nombre || "";
+                    posTelefono.value = cli.telefono || "";
+                    posDireccion.value = cli.direccion || "";
+                }
+            } else {
+                posNombre.value = "";
+                posTelefono.value = "";
+                posDireccion.value = "";
+            }
+        });
+    }
+
+    if (posBtnAgregar) {
+        posBtnAgregar.addEventListener("click", (e) => {
+            e.preventDefault();
+            const prodId = posSelectProducto.value;
+            const cant = parseInt(posCantidad.value) || 1;
+            if (!prodId) {
+                Swal.fire({ title: "Atención", text: "Selecciona un producto primero.", icon: "warning" });
+                return;
+            }
+            const prodDb = productosActuales.find(p => p.id === prodId);
+            if (!prodDb) return;
+            const stockDisp = parseInt(prodDb.stock) || 0;
+            const idx = carritoAdmin.findIndex(item => item.id === prodId);
+            const cantEnCarrito = idx > -1 ? carritoAdmin[idx].cantidad : 0;
+            if (cantEnCarrito + cant > stockDisp) {
+                Swal.fire({ title: "Stock insuficiente", text: "Solo quedan " + (stockDisp - cantEnCarrito) + " unidades disponibles para agregar.", icon: "warning" });
+                return;
+            }
+            if (idx > -1) {
+                carritoAdmin[idx].cantidad += cant;
+            } else {
+                carritoAdmin.push(Object.assign({}, prodDb, { cantidad: cant }));
+            }
+            posCantidad.value = 1;
+            posSelectProducto.value = "";
+            renderizarCarritoAdmin();
+        });
+    }
+
+    function renderizarCarritoAdmin() {
+        if (!posListaCarrito) return;
+        posListaCarrito.innerHTML = "";
+        let total = 0;
+        if (carritoAdmin.length === 0) {
+            posListaCarrito.innerHTML = '<p style="color: #666; font-size: 13px; text-align: center; padding-top: 15px;">El carrito interno está vacío.</p>';
+            posTotalUsd.textContent = "0.00";
+            return;
+        }
+        carritoAdmin.forEach((item, index) => {
+            const precio = typeof item.precio === 'number' ? item.precio : parseFloat(item.precio || 0);
+            const subtotal = item.cantidad * precio;
+            total += subtotal;
+            const div = document.createElement("div");
+            div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: #222; padding: 8px; margin-bottom: 5px; border-radius: 4px; border-left: 3px solid #00bcd4;";
+            div.innerHTML =
+                '<div style="flex: 1; color: #fff; font-size: 14px; margin-left: 8px;">' + item.cantidad + 'x ' + item.nombre + '</div>' +
+                '<div style="color: #81c784; font-weight: bold; margin-right: 15px;">' + fmtUSD(subtotal) + '</div>' +
+                '<button class="pos-btn-quitar" data-index="' + index + '" style="background: none; border: none; color: #f44336; cursor: pointer; font-size: 18px; padding: 0;">✖</button>';
+            posListaCarrito.appendChild(div);
+        });
+        posTotalUsd.textContent = total.toFixed(2);
+    }
+
+    if (posListaCarrito) {
+        posListaCarrito.addEventListener("click", (e) => {
+            if (e.target.classList.contains("pos-btn-quitar")) {
+                const idx = e.target.getAttribute("data-index");
+                carritoAdmin.splice(idx, 1);
+                renderizarCarritoAdmin();
+            }
+        });
+    }
+
+    if (posBtnGuardar) {
+        posBtnGuardar.addEventListener("click", async () => {
+            const nombreCli = posNombre.value.trim();
+            const tlfCli = posTelefono.value.trim();
+            const dirCli = posDireccion.value.trim();
+            const tipoPago = posTipoPago.value;
+            if (nombreCli === "" || tlfCli === "") {
+                Swal.fire({ title: "Faltan datos", text: "El nombre y el teléfono son obligatorios.", icon: "warning" });
+                return;
+            }
+            if (carritoAdmin.length === 0) {
+                Swal.fire({ title: "Carrito vacío", text: "Agrega al menos un producto a la cuenta.", icon: "warning" });
+                return;
+            }
+            posBtnGuardar.disabled = true;
+            posBtnGuardar.textContent = "Procesando...";
+            try {
+                let total = 0;
+                const arrayProds = [];
+                carritoAdmin.forEach(item => {
+                    const precio = typeof item.precio === 'number' ? item.precio : parseFloat(item.precio || 0);
+                    total += (item.cantidad * precio);
+                    arrayProds.push({ id: item.id, nombre: item.nombre, cantidad: item.cantidad, precio: precio.toFixed(2) });
+                });
+                const totalBs = (total * tasaBCV).toFixed(2);
+                const tlfLimpio = formatearTelefono(tlfCli);
+                await addDoc(collection(db, "pedidos"), {
+                    cliente: nombreCli,
+                    telefono: tlfLimpio,
+                    direccion: dirCli,
+                    productos: arrayProds,
+                    totalUSD: total.toFixed(2),
+                    totalVES: totalBs,
+                    modalidadPago: tipoPago === "credito" ? "A Crédito" : "Contado",
+                    estado: "Completado",
+                    fecha: serverTimestamp(),
+                    origen: "POS Manual"
+                });
+                const datosAct = { nombre: nombreCli, telefono: tlfLimpio, direccion: dirCli, fechaUltimoPedido: serverTimestamp() };
+                if (tipoPago === "credito") {
+                    datosAct.deuda = increment(total);
+                    datosAct.estado = "Con Deuda";
+                }
+                await setDoc(doc(db, "clientes", tlfLimpio), datosAct, { merge: true });
+                for (const item of carritoAdmin) {
+                    await updateDoc(doc(db, "productos", item.id), { stock: increment(-item.cantidad) });
+                }
+                carritoAdmin = [];
+                renderizarCarritoAdmin();
+                posNombre.value = "";
+                posTelefono.value = "";
+                posDireccion.value = "";
+                posSelectCliente.value = "";
+                if (posIaTexto) posIaTexto.value = "";
+                Swal.fire({ icon: 'success', title: '¡Venta Registrada!', text: "La factura de " + nombreCli + " fue guardada exitosamente.", confirmButtonColor: '#00bcd4' });
+            } catch (error) {
+                Swal.fire({ title: "Error", text: error.message, icon: "error" });
+            } finally {
+                posBtnGuardar.disabled = false;
+                posBtnGuardar.textContent = "Procesar Pedido Manual";
+            }
+        });
+    }
+
+    // ==========================================
+    // SECCIÓN NORMAL Y FUNCIONES BASE
+    // ==========================================
+    const cartNombreInput = document.getElementById("cart-nombre");
+    const cartTelefonoInput = document.getElementById("cart-telefono");
+    const cartDireccionInput = document.getElementById("cart-direccion");
+
+    cartNombreInput.value = localStorage.getItem("pp_nombre") || "";
+    cartTelefonoInput.value = localStorage.getItem("pp_telefono") || "";
+    cartDireccionInput.value = localStorage.getItem("pp_direccion") || "";
+
+    let cartTipoPago = document.getElementById("cart-tipo-pago");
+    if (!cartTipoPago && cartDireccionInput) {
+        cartTipoPago = document.createElement("select");
+        cartTipoPago.id = "cart-tipo-pago";
+        cartTipoPago.style.cssText = "width: 100%; padding: 10px; margin-top: 10px; border-radius: 4px; background-color: #222; color: #fff; border: 1px solid #444; font-size: 14px; cursor: pointer;";
+        cartTipoPago.innerHTML = '<option value="contado">Pago al Contado (Completo)</option><option value="credito" id="opcion-credito">Pago a Crédito (Acordar cuotas con el negocio)</option>';
+        cartDireccionInput.parentNode.insertBefore(cartTipoPago, cartDireccionInput.nextSibling);
+    }
+
+    onSnapshot(doc(db, "configuracion", "bcv"), (docSnap) => {
+        if (docSnap.exists()) {
+            tasaBCV = parseFloat(docSnap.data().valor) || 1;
+            document.getElementById("tasa-actual-admin").textContent = tasaBCV.toFixed(2);
+            document.getElementById("tasa-bcv-cliente").textContent = tasaBCV.toFixed(2);
+            document.getElementById("banner-bcv").classList.remove("oculto");
+        }
+        renderizarTodo();
+        if (vistaAdmin && !vistaAdmin.classList.contains("oculto")) {
+            renderizarClientes();
+            renderizarProveedores();
+            renderizarPedidos();
+            renderizarGastos();
+        }
+    });
+
+    document.getElementById("btn-guardar-tasa").addEventListener("click", async () => {
+        const inputTasa = document.getElementById("input-tasa-bcv");
+        let valorTasa = inputTasa.value.replace(',', '.');
+        const nuevaTasa = parseFloat(valorTasa);
+        if (nuevaTasa > 0) {
+            const btn = document.getElementById("btn-guardar-tasa");
+            btn.textContent = "Guardando...";
+            try {
+                await setDoc(doc(db, "configuracion", "bcv"), { valor: nuevaTasa }, { merge: true });
+                inputTasa.value = "";
+                btn.textContent = "¡Actualizado!";
+                setTimeout(() => { btn.textContent = "Fijar Tasa"; }, 2000);
+            } catch (error) {
+                Swal.fire({ title: "Error", text: "Ocurrió un error al fijar la tasa.", icon: "error" });
+                btn.textContent = "Fijar Tasa";
+            }
+        }
+    });
+
+    chkMostrarPass.addEventListener("change", () => { passAdmin.type = chkMostrarPass.checked ? "text" : "password"; });
+
+    let contadorClics = 0;
+    let tiempoClic;
+    tituloSecreto.addEventListener("click", () => {
+        contadorClics++;
+        if (contadorClics === 1) { tiempoClic = setTimeout(() => { contadorClics = 0; }, 1000); }
+        if (contadorClics === 3) { clearTimeout(tiempoClic); contadorClics = 0; modalLogin.classList.remove("oculto"); }
+    });
+
+    btnCerrarModal.addEventListener("click", () => {
+        modalLogin.classList.add("oculto");
+        mensajeError.classList.add("oculto");
+        emailAdmin.value = "";
+        passAdmin.value = "";
+        chkMostrarPass.checked = false;
+        passAdmin.type = "password";
+    });
+
+    btnEntrar.addEventListener("click", () => {
+        signInWithEmailAndPassword(auth, emailAdmin.value, passAdmin.value)
+            .then(() => {
+                modalLogin.classList.add("oculto");
+                emailAdmin.value = "";
+                passAdmin.value = "";
+                chkMostrarPass.checked = false;
+                passAdmin.type = "password";
+            })
+            .catch(() => mensajeError.classList.remove("oculto"));
+    });
+
+    btnSalir.addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            vistaCliente.classList.add("oculto");
+            vistaAdmin.classList.remove("oculto");
+            btnCarritoFlotante.classList.add("oculto");
+
+            unsubClientes = onSnapshot(collection(db, "clientes"), (snapshot) => {
+                clientesActuales = [];
+                if (!snapshot.empty) {
+                    snapshot.forEach((docSnap) => { clientesActuales.push(Object.assign({ id: docSnap.id }, docSnap.data())); });
+                    clientesActuales.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
+                }
+                renderizarClientes();
+                if (moduloPos && !moduloPos.classList.contains("oculto")) actualizarListasPos();
+            });
+
+            unsubProveedores = onSnapshot(collection(db, "proveedores"), (snapshot) => {
+                proveedoresActuales = [];
+                if (!snapshot.empty) {
+                    snapshot.forEach((docSnap) => { proveedoresActuales.push(Object.assign({ id: docSnap.id }, docSnap.data())); });
+                    proveedoresActuales.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
+                }
+                renderizarProveedores();
+            });
+
+            unsubPedidos = onSnapshot(collection(db, "pedidos"), (snapshot) => {
+                listaPedidosDiv.innerHTML = "";
+                pedidosActuales = [];
+                if (snapshot.empty) { listaPedidosDiv.innerHTML = "<p>Aún no hay pedidos registrados.</p>"; return; }
+                snapshot.forEach((docSnap) => { pedidosActuales.push(Object.assign({ id: docSnap.id }, docSnap.data())); });
+                pedidosActuales.sort((a, b) => {
+                    const timeA = a.fecha ? a.fecha.toMillis() : 0;
+                    const timeB = b.fecha ? b.fecha.toMillis() : 0;
+                    return timeB - timeA;
+                });
+                renderizarPedidos();
+            });
+
+            unsubGastos = onSnapshot(collection(db, "gastos"), (snapshot) => {
+                gastosActuales = [];
+                snapshot.forEach((docSnap) => { gastosActuales.push(Object.assign({ id: docSnap.id }, docSnap.data())); });
+                gastosActuales.sort((a, b) => {
+                    const timeA = a.fecha ? a.fecha.toMillis() : 0;
+                    const timeB = b.fecha ? b.fecha.toMillis() : 0;
+                    return timeB - timeA;
+                });
+                renderizarGastos();
+            });
+        } else {
+            vistaAdmin.classList.add("oculto");
+            moduloInventario.classList.add("oculto");
+            moduloClientes.classList.add("oculto");
+            moduloPedidos.classList.add("oculto");
+            if (moduloProveedores) moduloProveedores.classList.add("oculto");
+            if (moduloGastos) moduloGastos.classList.add("oculto");
+            if (moduloPos) moduloPos.classList.add("oculto");
+            vistaCliente.classList.remove("oculto");
+            actualizarInterfazCarrito();
+
+            if (unsubClientes) unsubClientes();
+            if (unsubProveedores) unsubProveedores();
+            if (unsubPedidos) unsubPedidos();
+            if (unsubGastos) unsubGastos();
+        }
+    });
+
+    btnInventario.addEventListener("click", () => { vistaAdmin.classList.add("oculto"); moduloInventario.classList.remove("oculto"); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    btnVolverAdminInv.addEventListener("click", () => {
+        moduloInventario.classList.add("oculto");
+        vistaAdmin.classList.remove("oculto");
+        if (productoEnEdicionId) {
+            formProducto.reset();
+            document.getElementById("prod-stock").value = "0";
+            document.getElementById("prod-costo").value = "";
+            productoEnEdicionId = null;
+            btnGuardarProd.textContent = "Guardar Producto";
+            btnGuardarProd.style.backgroundColor = "#e63946";
+        }
+    });
+
+    btnClientes.addEventListener("click", () => { vistaAdmin.classList.add("oculto"); moduloClientes.classList.remove("oculto"); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    btnVolverAdminCli.addEventListener("click", () => {
+        moduloClientes.classList.add("oculto");
+        vistaAdmin.classList.remove("oculto");
+        if (clienteEnEdicionId) {
+            formCliente.reset();
+            document.getElementById("cli-deuda").value = "0";
+            clienteEnEdicionId = null;
+            btnGuardarCli.textContent = "Registrar Cliente";
+            btnGuardarCli.style.backgroundColor = "#4caf50";
+        }
+    });
+
+    btnPedidos.addEventListener("click", () => { vistaAdmin.classList.add("oculto"); moduloPedidos.classList.remove("oculto"); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    btnVolverAdminPed.addEventListener("click", () => { moduloPedidos.classList.add("oculto"); vistaAdmin.classList.remove("oculto"); });
+
+    // ==========================================
+    // AGREGAR COSTO AL GUARDAR PRODUCTO
+    // ==========================================
+    formProducto.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        btnGuardarProd.disabled = true;
+        const textoOriginal = btnGuardarProd.textContent;
+        btnGuardarProd.textContent = "Procesando...";
+        try {
+            const datosProducto = {
+                nombre: document.getElementById("prod-nombre").value,
+                descripcion: document.getElementById("prod-desc").value,
+                costo: parseFloat(document.getElementById("prod-costo").value) || 0,
+                precio: parseFloat(document.getElementById("prod-precio").value),
+                stock: parseInt(document.getElementById("prod-stock").value),
+                foto: document.getElementById("prod-foto").value,
+            };
+            if (productoEnEdicionId) {
+                await updateDoc(doc(db, "productos", productoEnEdicionId), datosProducto);
+                productoEnEdicionId = null;
+                btnGuardarProd.textContent = "¡Actualizado!";
+            } else {
+                datosProducto.fechaCreacion = serverTimestamp();
+                await addDoc(collection(db, "productos"), datosProducto);
+                btnGuardarProd.textContent = "¡Guardado!";
+            }
+            formProducto.reset();
+            document.getElementById("prod-stock").value = "0";
+            document.getElementById("prod-costo").value = "";
+            btnGuardarProd.disabled = false;
+            btnGuardarProd.style.backgroundColor = "#4caf50";
+            setTimeout(() => {
+                btnGuardarProd.style.backgroundColor = "#e63946";
+                btnGuardarProd.textContent = "Guardar Producto";
+            }, 2500);
+        } catch (error) {
+            btnGuardarProd.disabled = false;
+            btnGuardarProd.textContent = "Error";
+            setTimeout(() => { btnGuardarProd.textContent = textoOriginal; }, 3000);
+            Swal.fire({ title: "Error", text: "Motivo: " + error.message, icon: "error" });
+        }
+    });
+
+    listaProductosDiv.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-eliminar")) {
+            Swal.fire({
+                title: '¿Eliminar producto?',
+                text: "Esta acción borrará el producto del catálogo.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f44336',
+                cancelButtonColor: '#555',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        await deleteDoc(doc(db, "productos", e.target.closest(".btn-eliminar").getAttribute("data-id")));
+                    } catch (error) {
+                        Swal.fire({ title: "Error", text: error.message, icon: "error" });
+                    }
+                }
+            });
+        }
+        if (e.target.closest(".btn-editar")) {
+            const id = e.target.closest(".btn-editar").getAttribute("data-id");
+            const prod = productosActuales.find(p => p.id === id);
+            if (prod) {
+                document.getElementById("prod-nombre").value = prod.nombre;
+                document.getElementById("prod-desc").value = prod.descripcion;
+                document.getElementById("prod-costo").value = prod.costo || 0;
+                document.getElementById("prod-precio").value = prod.precio;
+                document.getElementById("prod-stock").value = prod.stock;
+                document.getElementById("prod-foto").value = prod.foto || "";
+                productoEnEdicionId = id;
+                btnGuardarProd.textContent = "Actualizar Producto";
+                btnGuardarProd.style.backgroundColor = "#ffc107";
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+    });
+
+    onSnapshot(collection(db, "productos"), (snapshot) => {
+        productosActuales = [];
+        snapshot.forEach((docSnap) => { productosActuales.push(Object.assign({ id: docSnap.id }, docSnap.data())); });
+        productosActuales.sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
+        renderizarTodo();
+    });
+
+    function renderizarTodo() {
+        listaProductosDiv.innerHTML = "";
+        if (catalogoPublico) catalogoPublico.innerHTML = "";
+
+        let divResumen = document.getElementById("resumen-total-inventario");
+        if (!divResumen) {
+            divResumen = document.createElement("div");
+            divResumen.id = "resumen-total-inventario";
+            divResumen.style.cssText = "background-color: #1b3a20; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; border: 1px solid #4caf50;";
+            listaProductosDiv.parentNode.insertBefore(divResumen, listaProductosDiv);
+        }
+
+        if (productosActuales.length === 0) {
+            listaProductosDiv.innerHTML = "<p>No hay productos registrados aún.</p>";
+            divResumen.style.display = "none";
+            if (catalogoPublico) catalogoPublico.innerHTML = "<p style='text-align:center; width:100%; color:#aaa;'>El catálogo está vacío por ahora.</p>";
+        } else {
+            divResumen.style.display = "block";
+        }
+
+        const iconoWhatsApp = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 6px; vertical-align: text-bottom;"><path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>';
+
+        let valorTotalVenta = 0;
+        let valorTotalCosto = 0;
+
+        productosActuales.forEach((prod) => {
+            const nombre = prod.nombre || "Sin nombre";
+            const desc = prod.descripcion || "";
+            const stock = parseInt(prod.stock) || 0;
+            const precioNum = typeof prod.precio === 'number' ? prod.precio : parseFloat(prod.precio || 0);
+            const costoNum = typeof prod.costo === 'number' ? prod.costo : parseFloat(prod.costo || 0);
+            const gananciaUnidad = precioNum - costoNum;
+
+            const precioUSDText = fmtUSD(precioNum);
+            const precioVES = (precioNum * tasaBCV).toFixed(2);
+
+            valorTotalVenta += (stock * precioNum);
+            valorTotalCosto += (stock * costoNum);
+
+            const divAdmin = document.createElement("div");
+            divAdmin.classList.add("item-producto");
+            const imagenHTMLAdmin = prod.foto
+                ? '<img src="' + prod.foto + '" class="foto-producto-lista" alt="' + nombre + '">'
+                : '<div class="foto-producto-lista" style="background-color: #333; display: flex; justify-content: center; align-items: center; font-size: 24px;">📦</div>';
+
+            divAdmin.innerHTML =
+                '<div style="display: flex; flex-direction: column; height: 100%; width: 100%; justify-content: space-between;">' +
+                    '<div>' + imagenHTMLAdmin +
+                        '<div style="text-align: center; padding: 0 5px;">' +
+                            '<h4 title="' + nombre + '" class="clamp-titulo" style="color: #f1faee;">' + nombre + '</h4>' +
+                            '<p title="' + desc + '" class="clamp-desc">' + desc + '</p>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div style="width: 100%;">' +
+                        '<div class="item-precio-stock" style="display: flex; flex-direction: column; align-items: center; background-color: #1a1a1a; padding: 6px; border-radius: 6px; border: 1px solid #333; margin-bottom: 5px;">' +
+                            '<div style="font-weight: bold;"><span>' + precioUSDText + '</span> <span style="color: #666;">|</span> <span style="color: #fff; font-size: 13px;">📦 ' + stock + '</span></div>' +
+                            '<div style="font-size: 12px; color: #aaa; margin-top: 3px;">Costo: ' + fmtUSD(costoNum) + ' | Ganancia: <span style="color:#81c784; font-weight:bold;">' + fmtUSD(gananciaUnidad) + '</span></div>' +
+                        '</div>' +
+                        '<div class="botones-accion">' +
+                            '<button class="btn-editar" data-id="' + prod.id + '" style="background: #ffc107; color: #000;">✏️ Editar</button>' +
+                            '<button class="btn-eliminar" data-id="' + prod.id + '" style="background: #f44336; color: #fff;">🗑️ Eliminar</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            listaProductosDiv.appendChild(divAdmin);
+
+            if (catalogoPublico) {
+                const divCliente = document.createElement("div");
+                divCliente.classList.add("tarjeta-producto");
+                const imagenHTMLCliente = prod.foto
+                    ? '<img src="' + prod.foto + '" alt="' + nombre + '">'
+                    : '<div style="width: 100%; height: 110px; background-color: #333; border-radius: 6px 6px 0 0; display: flex; justify-content: center; align-items: center; font-size: 40px; margin-bottom: 10px;">📦</div>';
+
+                let botonHTMLCliente = stock > 0
+                    ? '<button class="btn-whatsapp btn-agregar-carrito" data-id="' + prod.id + '" style="width: 100%; background-color: #25D366; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; margin: 0;">' + iconoWhatsApp + ' Agregar al Carrito</button>'
+                    : '<button disabled style="width: 100%; background-color: #444; color: #888; border: none; padding: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; cursor: not-allowed; display: flex; justify-content: center; align-items: center; margin: 0;">🚫 Agotado</button>';
+
+                divCliente.innerHTML =
+                    '<div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">' +
+                        '<div>' + imagenHTMLCliente +
+                            '<div style="padding: 0 10px;">' +
+                                '<h4 class="clamp-titulo" style="color: #f1faee;">' + nombre + '</h4>' +
+                                '<p class="clamp-desc">' + desc + '</p>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div style="padding: 10px; border-top: 1px solid #333; text-align: center;">' +
+                            '<p class="precio" style="margin-bottom: 3px;">' + precioUSDText + '</p>' +
+                            '<p style="margin: 0 0 10px 0; color: #bbb; font-size: 13px;">Bs. ' + precioVES + '</p>' +
+                            botonHTMLCliente +
+                        '</div>' +
+                    '</div>';
+                catalogoPublico.appendChild(divCliente);
+            }
+        });
+
+        const gananciaProyectada = valorTotalVenta - valorTotalCosto;
+        divResumen.innerHTML =
+            '<h3 style="margin: 0 0 10px 0; color: #81c784; font-size: 16px;">💰 Valor del Inventario Físico</h3>' +
+            '<div style="display: flex; justify-content: space-around; font-size: 13px; color: #bbb;">' +
+                '<div style="text-align: center;">Capital Invertido (Costo)<br><strong style="color: #fff; font-size: 16px;">' + fmtUSD(valorTotalCosto) + '</strong></div>' +
+                '<div style="text-align: center;">Valor de Venta (Precio)<br><strong style="color: #fff; font-size: 16px;">' + fmtUSD(valorTotalVenta) + '</strong></div>' +
+            '</div>' +
+            '<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #4caf50;">' +
+                'Ganancia Neta Proyectada: <strong style="color: #81c784; font-size: 18px;">' + fmtUSD(gananciaProyectada) + '</strong>' +
+            '</div>';
+
+        if (gasProducto) {
+            const valorAnterior = gasProducto.value;
+            gasProducto.innerHTML = '<option value="ninguno">🔴 Gasto Externo (Solo Dinero, No afecta inventario)</option>';
+            productosActuales.forEach(p => {
+                if (parseInt(p.stock) > 0) {
+                    gasProducto.innerHTML += '<option value="' + p.id + '">' + p.nombre + ' (Stock: ' + p.stock + ')</option>';
+                }
+            });
+            if (Array.from(gasProducto.options).some(opt => opt.value === valorAnterior)) {
+                gasProducto.value = valorAnterior;
+            }
+        }
+
+        if (moduloPos && !moduloPos.classList.contains("oculto")) actualizarListasPos();
+        actualizarInterfazCarrito();
+        renderizarListaCarrito();
+    }
+
+    formCliente.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        btnGuardarCli.disabled = true;
+        const textoOriginal = btnGuardarCli.textContent;
+        btnGuardarCli.textContent = "Guardando...";
+        try {
+            const tlf = formatearTelefono(document.getElementById("cli-telefono").value);
+            const datosCliente = {
+                nombre: document.getElementById("cli-nombre").value,
+                telefono: tlf,
+                direccion: document.getElementById("cli-direccion").value,
+                estado: document.getElementById("cli-estado").value,
+                deuda: parseFloat(document.getElementById("cli-deuda").value) || 0,
+            };
+            if (clienteEnEdicionId) {
+                await updateDoc(doc(db, "clientes", clienteEnEdicionId), datosCliente);
+                clienteEnEdicionId = null;
+                btnGuardarCli.textContent = "¡Actualizado!";
+            } else {
+                datosCliente.fechaRegistro = serverTimestamp();
+                await setDoc(doc(db, "clientes", tlf), datosCliente, { merge: true });
+                btnGuardarCli.textContent = "¡Registrado!";
+            }
+            formCliente.reset();
+            document.getElementById("cli-deuda").value = "0";
+            btnGuardarCli.disabled = false;
+            btnGuardarCli.style.backgroundColor = "#4caf50";
+            setTimeout(() => { btnGuardarCli.textContent = "Registrar Cliente"; }, 2500);
+        } catch (error) {
+            btnGuardarCli.disabled = false;
+            btnGuardarCli.textContent = "Error";
+            setTimeout(() => { btnGuardarCli.textContent = textoOriginal; }, 3000);
+            Swal.fire({ title: "Error", text: "Motivo: " + error.message, icon: "error" });
+        }
+    });
+
+    listaClientesDiv.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-eliminar-cli")) {
+            Swal.fire({
+                title: '¿Eliminar cliente?',
+                text: "Esta acción borrará el registro del cliente.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f44336',
+                cancelButtonColor: '#555',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        await deleteDoc(doc(db, "clientes", e.target.closest(".btn-eliminar-cli").getAttribute("data-id")));
+                    } catch (error) {
+                        Swal.fire({ title: "Error", text: error.message, icon: "error" });
+                    }
+                }
+            });
+        }
+        if (e.target.closest(".btn-editar-cli")) {
+            const id = e.target.closest(".btn-editar-cli").getAttribute("data-id");
+            const cli = clientesActuales.find(c => c.id === id);
+            if (cli) {
+                document.getElementById("cli-nombre").value = cli.nombre;
+                document.getElementById("cli-telefono").value = cli.telefono;
+                document.getElementById("cli-direccion").value = cli.direccion || "";
+                document.getElementById("cli-estado").value = cli.estado;
+                document.getElementById("cli-deuda").value = cli.deuda;
+                clienteEnEdicionId = id;
+                btnGuardarCli.textContent = "Actualizar Cliente";
+                btnGuardarCli.style.backgroundColor = "#ffc107";
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+        if (e.target.closest(".btn-cobrar-cli")) {
+            const cli = clientesActuales.find(c => c.id === e.target.closest(".btn-cobrar-cli").getAttribute("data-id"));
+            if (cli && cli.telefono) {
+                const tlfLink = formatearTelefono(cli.telefono);
+                const montoVES = (parseFloat(cli.deuda || 0) * tasaBCV).toFixed(2);
+                const mensaje = "Hola " + cli.nombre + ", te saludamos de Pasión Paraguanera. Te escribimos para recordarte amablemente que tienes un saldo pendiente por cancelar de *" + fmtUSD(cli.deuda) + "* (Equivalente a *Bs. " + montoVES + "* a la tasa de hoy). ¡Agradecemos tu pronta atención!";
+                window.open("https://wa.me/" + tlfLink + "?text=" + encodeURIComponent(mensaje), "_blank");
+            }
+        }
+        if (e.target.closest(".btn-promo-cli")) {
+            const cli = clientesActuales.find(c => c.id === e.target.closest(".btn-promo-cli").getAttribute("data-id"));
+            if (cli && cli.telefono) {
+                const tlfLink = formatearTelefono(cli.telefono);
+                const mensaje = "¡Hola " + cli.nombre + "! Te saludamos de Pasión Paraguanera. Acabamos de actualizar nuestro catálogo con mercancía nueva y queríamos que fueras de los primeros en verla. Échale un ojo aquí: https://pasion-paraguanera-app.vercel.app/";
+                window.open("https://wa.me/" + tlfLink + "?text=" + encodeURIComponent(mensaje), "_blank");
+            }
+        }
+        if (e.target.closest(".btn-abonar-cli")) {
+            const id = e.target.closest(".btn-abonar-cli").getAttribute("data-id");
+            const cli = clientesActuales.find(c => c.id === id);
+            if (cli) {
+                const montoActual = parseFloat(cli.deuda || 0);
+                Swal.fire({
+                    title: "Abono de " + cli.nombre,
+                    text: "Deuda actual: " + fmtUSD(montoActual),
+                    input: 'text',
+                    inputPlaceholder: 'Ej: 5',
+                    showCancelButton: true,
+                    confirmButtonText: 'Registrar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#4caf50'
+                }).then(async (result) => {
+                    if (result.isConfirmed && result.value) {
+                        const abono = parseFloat(result.value.replace(',', '.'));
+                        if (!isNaN(abono) && abono > 0) {
+                            let nuevaDeuda = montoActual - abono;
+                            let nuevoEstado = cli.estado;
+                            if (nuevaDeuda <= 0) {
+                                nuevaDeuda = 0;
+                                nuevoEstado = "Al día";
+                                Swal.fire({ icon: 'success', title: '¡Deuda saldada!', text: cli.nombre + " está solvente.", confirmButtonColor: '#673ab7' });
+                            } else {
+                                Swal.fire({ icon: 'success', title: 'Abono registrado', text: "La nueva deuda de " + cli.nombre + " es de: " + fmtUSD(nuevaDeuda), confirmButtonColor: '#673ab7' });
+                            }
+                            try {
+                                const btn = e.target.closest(".btn-abonar-cli");
+                                btn.textContent = "Procesando...";
+                                await updateDoc(doc(db, "clientes", id), { deuda: nuevaDeuda, estado: nuevoEstado });
+                            } catch (error) {
+                                Swal.fire({ title: "Error", text: "Motivo: " + error.message, icon: "error" });
+                            }
+                        } else {
+                            Swal.fire({ title: "Monto inválido", text: "Por favor ingresa un monto mayor a 0.", icon: "warning" });
+                        }
+                    }
+                });
+            }
+        }
+    });
+
+    function renderizarClientes() {
+        listaClientesDiv.innerHTML = "";
+        let divBuscador = document.getElementById("contenedor-buscador-cli");
+        if (!divBuscador) {
+            divBuscador = document.createElement("div");
+            divBuscador.id = "contenedor-buscador-cli";
+            divBuscador.style.cssText = "margin-bottom: 15px; width: 100%;";
+            divBuscador.innerHTML = '<input type="text" id="input-buscador-cli" placeholder="🔍 Buscar cliente por nombre o teléfono..." style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #222; color: white; font-size: 15px; box-sizing: border-box;">';
+            listaClientesDiv.parentNode.insertBefore(divBuscador, listaClientesDiv);
+            document.getElementById("input-buscador-cli").addEventListener("input", renderizarClientes);
+        }
+        let divResumenDeudas = document.getElementById("resumen-total-deudas");
+        if (!divResumenDeudas) {
+            divResumenDeudas = document.createElement("div");
+            divResumenDeudas.id = "resumen-total-deudas";
+            divResumenDeudas.style.cssText = "background-color: #421818; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; border: 1px solid #f44336;";
+            listaClientesDiv.parentNode.insertBefore(divResumenDeudas, listaClientesDiv);
+        }
+        if (clientesActuales.length === 0) {
+            divResumenDeudas.style.display = "none";
+            divBuscador.style.display = "none";
+            listaClientesDiv.innerHTML = "<p style='text-align:center; color:#aaa; width:100%;'>No hay clientes registrados aún.</p>";
+            return;
+        } else {
+            divResumenDeudas.style.display = "block";
+            divBuscador.style.display = "block";
+        }
+
+        let totalDeudaPendiente = 0;
+        clientesActuales.forEach(cli => { totalDeudaPendiente += parseFloat(cli.deuda || 0); });
+        const textoBusqueda = document.getElementById("input-buscador-cli") ? document.getElementById("input-buscador-cli").value.toLowerCase() : "";
+        const clientesMostrados = clientesActuales.filter(cli => {
+            const nombre = (cli.nombre || "").toLowerCase();
+            const tlf = (cli.telefono || "").toLowerCase();
+            return nombre.includes(textoBusqueda) || tlf.includes(textoBusqueda);
+        });
+
+        if (clientesMostrados.length === 0) {
+            listaClientesDiv.innerHTML = "<p style='text-align:center; color:#aaa; width:100%;'>No se encontraron resultados para tu búsqueda.</p>";
+        }
+        clientesMostrados.forEach((cli) => {
+            const nombre = cli.nombre || "Sin nombre";
+            const telefono = cli.telefono || "Sin número";
+            const direccion = cli.direccion || "Sin dirección registrada";
+            const estado = cli.estado || "Al día";
+            const deudaNum = parseFloat(cli.deuda || 0);
+
+            const divCli = document.createElement("div");
+            divCli.classList.add("item-producto");
+            divCli.style.borderTopColor = estado === "Con Deuda" ? "#f44336" : "#4caf50";
+
+            let seccionDeuda = estado === "Con Deuda" && deudaNum > 0
+                ? '<div style="background-color: #421818; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #ff6b6b; font-weight: bold; font-size: 14px;">Deuda: ' + fmtUSD(deudaNum) + '</span></div>'
+                : '<div style="background-color: #1b3a20; padding: 6px; border-radius: 4px; margin-bottom: 10px;"><span style="color: #81c784; font-weight: bold; font-size: 14px;">Cliente Solvente</span></div>';
+
+            let btnAbonar = estado === "Con Deuda" && deudaNum > 0
+                ? '<button class="btn-abonar-cli" data-id="' + cli.id + '" style="width: 100%; margin-bottom: 10px; background-color: #4caf50; color: white; font-size: 13px; padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">💵 Registrar Abono</button>'
+                : "";
+
+            let btnCobrar = estado === "Con Deuda" && deudaNum > 0
+                ? '<button class="btn-cobrar-cli btn-whatsapp" data-id="' + cli.id + '" style="width: 100%; margin-bottom: 10px; font-size: 13px; padding: 8px;">📲 Enviar Recordatorio</button>'
+                : "";
+
+            let btnPromo = '<button class="btn-promo-cli" data-id="' + cli.id + '" style="width: 100%; margin-bottom: 10px; background-color: #0288d1; color: white; font-size: 13px; padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">📢 Enviar Promo</button>';
+
+            divCli.innerHTML =
+                '<div style="display: flex; flex-direction: column; height: 100%; width: 100%; justify-content: space-between;">' +
+                    '<div style="text-align: center; margin-bottom: 15px;">' +
+                        '<h4 style="margin: 0 0 5px 0; color: #f1faee; font-size: 16px;">👤 ' + nombre + '</h4>' +
+                        '<p style="margin: 0 0 5px 0; font-size: 13px; color: #bbb;">📞 ' + telefono + '</p>' +
+                        '<p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">📍 ' + direccion + '</p>' +
+                        seccionDeuda +
+                    '</div>' +
+                    '<div style="width: 100%;">' +
+                        btnAbonar + btnCobrar + btnPromo +
+                        '<div style="display: flex; gap: 8px; justify-content: space-between; width: 100%;">' +
+                            '<button class="btn-editar-cli" data-id="' + cli.id + '" style="background: #ffc107; color: #000; width: 48%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">✏️ Editar</button>' +
+                            '<button class="btn-eliminar-cli" data-id="' + cli.id + '" style="background: #f44336; color: #fff; width: 48%; padding: 8px; font-size: 13px; margin: 0; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">🗑️ Eliminar</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            listaClientesDiv.appendChild(divCli);
+        });
+
+        const totalDeudaBs = (totalDeudaPendiente * tasaBCV).toFixed(2);
+        divResumenDeudas.innerHTML =
+            '<h3 style="margin: 0 0 5px 0; color: #ff6b6b; font-size: 16px;">📕 Total Cuentas por Cobrar (Deudas)</h3>' +
+            '<span style="font-size: 22px; color: #fff; font-weight: bold;">' + fmtUSD(totalDeudaPendiente) + '</span> ' +
+            '<span style="color: #bbb; font-size: 14px;">| Bs. ' + totalDeudaBs + '</span>';
+    }
+
+    listaPedidosDiv.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-estado-ped")) {
+            updateDoc(doc(db, "pedidos", e.target.closest(".btn-estado-ped").getAttribute("data-id")), {
+                estado: e.target.closest(".btn-estado-ped").getAttribute("data-estado")
+            });
+        }
+        if (e.target.closest(".btn-eliminar-ped")) {
+            Swal.fire({
+                title: '¿Borrar factura?',
+                text: "Esta factura desaparecerá del historial.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#333',
+                cancelButtonColor: '#555',
+                confirmButtonText: 'Sí, borrar',
+                cancelButtonText: 'Cancelar'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        await deleteDoc(doc(db, "pedidos", e.target.closest(".btn-eliminar-ped").getAttribute("data-id")));
+                    } catch (error) {
+                        Swal.fire({ title: "Error", text: error.message, icon: "error" });
+                    }
+                }
+            });
+        }
+    });
+
+    function renderizarPedidos() {
+        let divFiltros = document.getElementById("contenedor-filtros-pedidos");
+        if (!divFiltros) {
+            divFiltros = document.createElement("div");
+            divFiltros.id = "contenedor-filtros-pedidos";
+            divFiltros.style.cssText = "background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333; display: flex; flex-direction: column; gap: 10px;";
+            const currentYear = new Date().getFullYear();
+            let yearOptions = '<option value="todos">Todos los años</option>';
+            for (let y = 2024; y <= currentYear + 2; y++) {
+                yearOptions += '<option value="' + y + '">' + y + '</option>';
+            }
+            divFiltros.innerHTML =
+                '<div style="width: 100%;"><input type="text" id="input-buscador-ped" placeholder="🔍 Buscar factura por cliente o teléfono..." style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #222; color: white; font-size: 15px; box-sizing: border-box;"></div>' +
+                '<div style="display: flex; gap: 10px; justify-content: space-between;">' +
+                    '<select id="filtro-mes" style="width: 48%; padding: 8px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 14px;">' +
+                        '<option value="todos">Todos los meses</option><option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option><option value="4">Abril</option>' +
+                        '<option value="5">Mayo</option><option value="6">Junio</option><option value="7">Julio</option><option value="8">Agosto</option>' +
+                        '<option value="9">Septiembre</option><option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>' +
+                    '</select>' +
+                    '<select id="filtro-anio" style="width: 48%; padding: 8px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; font-size: 14px;">' + yearOptions + '</select>' +
+                '</div>' +
+                '<div style="text-align: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">' +
+                    '<h3 style="margin: 0 0 5px 0; color: #81c784; font-size: 16px;">💰 Ventas del Periodo (Sin Cancelados)</h3>' +
+                    '<span style="font-size: 22px; color: #fff; font-weight: bold;" id="total-filtro-usd">&#36;0.00</span> ' +
+                    '<span style="color: #bbb; font-size: 14px;">| Bs. <span id="total-filtro-bs">0.00</span></span>' +
+                '</div>';
+            listaPedidosDiv.parentNode.insertBefore(divFiltros, listaPedidosDiv);
+            document.getElementById("filtro-mes").value = (new Date().getMonth() + 1).toString();
+            document.getElementById("filtro-anio").value = currentYear.toString();
+            document.getElementById("filtro-mes").addEventListener("change", renderizarPedidos);
+            document.getElementById("filtro-anio").addEventListener("change", renderizarPedidos);
+            document.getElementById("input-buscador-ped").addEventListener("input", renderizarPedidos);
+        }
+
+        const mesSel = document.getElementById("filtro-mes").value;
+        const anioSel = document.getElementById("filtro-anio").value;
+        const textoBusqueda = document.getElementById("input-buscador-ped") ? document.getElementById("input-buscador-ped").value.toLowerCase() : "";
+        let totalUSDPeriodo = 0;
+        listaPedidosDiv.innerHTML = "";
+
+        const pedidosFiltrados = pedidosActuales.filter(pedido => {
+            const nombreCliente = (pedido.cliente || "").toLowerCase();
+            const telefonoCliente = (pedido.telefono || "").toLowerCase();
+            const pasaBusqueda = nombreCliente.includes(textoBusqueda) || telefonoCliente.includes(textoBusqueda);
+            if (!pedido.fecha) { return mesSel === "todos" && anioSel === "todos" && pasaBusqueda; }
+            const fechaObj = new Date(pedido.fecha.toMillis());
+            const mesPedido = (fechaObj.getMonth() + 1).toString();
+            const anioPedido = fechaObj.getFullYear().toString();
+            return (mesSel === "todos" || mesSel === mesPedido) && (anioSel === "todos" || anioSel === anioPedido) && pasaBusqueda;
+        });
+
+        if (pedidosFiltrados.length === 0) {
+            listaPedidosDiv.innerHTML = "<p style='text-align:center; color:#aaa; font-size:14px;'>No hay pedidos registrados para esta fecha o búsqueda.</p>";
+        } else {
+            pedidosFiltrados.forEach((pedido) => {
+                const estado = pedido.estado || "Pendiente";
+                const fechaStr = pedido.fecha ? new Date(pedido.fecha.toMillis()).toLocaleString() : "Fecha desconocida";
+                const dirPed = pedido.direccion || "Sin dirección";
+                let colorClase = estado === "Pendiente" ? "" : estado === "Completado" ? "completado" : "cancelado";
+                let etiqueta = estado === "Pendiente" ? "🟡 Pendiente" : estado === "Completado" ? "🟢 Completado" : "🔴 Cancelado";
+                let etiquetaModalidad = pedido.modalidadPago === "A Crédito"
+                    ? '<span style="background-color: #ff9800; color: #000; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px;">A CRÉDITO</span>'
+                    : '<span style="background-color: #4caf50; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 5px;">CONTADO</span>';
+                let listaItems = "";
+                if (pedido.productos && Array.isArray(pedido.productos)) {
+                    pedido.productos.forEach(p => {
+                        listaItems += '<li>' + p.cantidad + 'x ' + p.nombre + ' (' + USD + p.precio + ')</li>';
+                    });
+                }
+                if (estado !== "Cancelado") { totalUSDPeriodo += parseFloat(pedido.totalUSD || 0); }
+
+                const divPed = document.createElement("div");
+                divPed.className = "tarjeta-pedido " + colorClase;
+                divPed.innerHTML =
+                    '<div class="pedido-header"><h4>👤 ' + pedido.cliente + '</h4><span class="estado-badge">' + etiqueta + '</span></div>' +
+                    '<div class="pedido-cuerpo">' +
+                        '<p>📞 WhatsApp: ' + pedido.telefono + '</p>' +
+                        '<p>📍 Dirección: ' + dirPed + '</p>' +
+                        '<p>🕒 Fecha: ' + fechaStr + '</p>' +
+                        '<p>💳 Modalidad: ' + etiquetaModalidad + '</p>' +
+                        '<ul>' + listaItems + '</ul>' +
+                        '<div class="totales">Total: ' + fmtUSD(pedido.totalUSD) + ' | Bs. ' + parseFloat(pedido.totalVES || 0).toFixed(2) + '</div>' +
+                    '</div>' +
+                    '<div class="pedido-acciones">' +
+                        '<button class="btn-estado-ped" data-id="' + pedido.id + '" data-estado="Completado" style="background-color: #4caf50;">✔️ Listo</button>' +
+                        '<button class="btn-estado-ped" data-id="' + pedido.id + '" data-estado="Pendiente" style="background-color: #ff9800; color: #000;">🟡 Pdte</button>' +
+                        '<button class="btn-estado-ped" data-id="' + pedido.id + '" data-estado="Cancelado" style="background-color: #f44336;">❌ Canc</button>' +
+                        '<button class="btn-eliminar-ped" data-id="' + pedido.id + '" style="background-color: #333;">🗑️ Borrar</button>' +
+                    '</div>';
+                listaPedidosDiv.appendChild(divPed);
+            });
+        }
+        document.getElementById("total-filtro-usd").textContent = fmtUSD(totalUSDPeriodo);
+        document.getElementById("total-filtro-bs").textContent = (totalUSDPeriodo * tasaBCV).toFixed(2);
+    }
+
+    catalogoPublico.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-agregar-carrito")) {
+            const btn = e.target.closest(".btn-agregar-carrito");
+            const id = btn.getAttribute("data-id");
+            const prod = productosActuales.find(p => p.id === id);
+            if (prod) {
+                const stockDisponible = parseInt(prod.stock) || 0;
+                const index = carrito.findIndex(item => item.id === id);
+                let cantidadActual = index > -1 ? carrito[index].cantidad : 0;
+                if (cantidadActual >= stockDisponible) {
+                    Swal.fire({ title: "Límite alcanzado", text: "¡Lo sentimos! Solo quedan " + stockDisponible + " unidades disponibles.", icon: "warning" });
+                    return;
+                }
+                if (index > -1) {
+                    carrito[index].cantidad++;
+                } else {
+                    carrito.push(Object.assign({}, prod, { cantidad: 1 }));
+                }
+                const textoOriginal = btn.innerHTML;
+                btn.innerHTML = "¡Agregado! ✔️";
+                btn.style.backgroundColor = "#4caf50";
+                setTimeout(() => { btn.innerHTML = textoOriginal; btn.style.backgroundColor = "#25D366"; }, 1000);
+                actualizarInterfazCarrito();
+            }
+        }
+    });
+
+    btnCarritoFlotante.addEventListener("click", () => { renderizarListaCarrito(); modalCarrito.classList.remove("oculto"); });
+    btnCerrarCarrito.addEventListener("click", () => { modalCarrito.classList.add("oculto"); });
+    btnVaciarCarrito.addEventListener("click", () => {
+        Swal.fire({
+            title: '¿Vaciar el carrito?',
+            text: "Se cancelará el pedido actual.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f44336',
+            cancelButtonColor: '#555',
+            confirmButtonText: 'Sí, vaciar',
+            cancelButtonText: 'Volver'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                carrito = [];
+                actualizarInterfazCarrito();
+                modalCarrito.classList.add("oculto");
+            }
+        });
+    });
+
+    listaCarritoDiv.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-cantidad")) {
+            const btn = e.target.closest(".btn-cantidad");
+            const id = btn.getAttribute("data-id");
+            const accion = btn.getAttribute("data-accion");
+            const index = carrito.findIndex(item => item.id === id);
+            if (index > -1) {
+                const prod = productosActuales.find(p => p.id === id);
+                const stockDisponible = prod ? parseInt(prod.stock) || 0 : 0;
+                if (accion === "sumar") {
+                    if (carrito[index].cantidad >= stockDisponible) {
+                        Swal.fire({ title: "Límite alcanzado", text: "No hay más stock disponible de este producto.", icon: "info" });
+                    } else {
+                        carrito[index].cantidad++;
+                    }
+                } else if (accion === "restar") {
+                    carrito[index].cantidad--;
+                    if (carrito[index].cantidad === 0) { carrito.splice(index, 1); }
+                }
+                actualizarInterfazCarrito();
+                renderizarListaCarrito();
+                if (carrito.length === 0) { modalCarrito.classList.add("oculto"); }
+            }
+        }
+    });
+
+    btnEnviarWhatsapp.addEventListener("click", async () => {
+        if (carrito.length === 0) return;
+        const nombreCliente = cartNombreInput.value.trim();
+        const tlfCliente = cartTelefonoInput.value.trim();
+        const dirCliente = cartDireccionInput.value.trim();
+        if (nombreCliente === "" || tlfCliente === "" || dirCliente === "") {
+            Swal.fire({ title: "Faltan datos", text: "Por favor, completa todos tus datos para procesar el pedido.", icon: "warning" });
+            return;
+        }
+        const btn = document.getElementById("btn-enviar-whatsapp");
+        const textoOriginal = btn.innerHTML;
+        btn.innerHTML = "Procesando pedido...";
+        btn.disabled = true;
+
+        let total = 0;
+        let mensaje = "¡Hola Pasión Paraguanera! Soy *" + nombreCliente + "*. Quisiera hacer el siguiente pedido:\n\n";
+        const arrayProductosFactura = [];
+        carrito.forEach(item => {
+            const precioNum = typeof item.precio === 'number' ? item.precio : parseFloat(item.precio || 0);
+            const subtotal = item.cantidad * precioNum;
+            total += subtotal;
+            mensaje += "🔹 " + item.cantidad + "x *" + item.nombre + "* (" + fmtUSD(precioNum) + " c/u) = " + fmtUSD(subtotal) + "\n";
+            arrayProductosFactura.push({ id: item.id, nombre: item.nombre, cantidad: item.cantidad, precio: precioNum.toFixed(2) });
+        });
+
+        const totalBs = (total * tasaBCV).toFixed(2);
+        const tipoPagoSelect = document.getElementById("cart-tipo-pago");
+        const tipoPago = tipoPagoSelect ? tipoPagoSelect.value : "contado";
+        const modalidadTexto = tipoPago === "credito" ? "A CRÉDITO (Por cuotas) 🗓️" : "CONTADO (Completo) 💵";
+        mensaje += "\n*TOTAL A PAGAR:*\n💵 *" + fmtUSD(total) + "*\n🇻🇪 *Bs. " + totalBs + "* (A tasa de Bs. " + tasaBCV.toFixed(2) + ")\n\n*MODALIDAD DE PAGO:* " + modalidadTexto + "\n📍 *Dirección de entrega:* " + dirCliente + "\n\n¿Tienen disponibilidad?";
+
+        try {
+            const tlfLimpio = formatearTelefono(tlfCliente);
+            localStorage.setItem("pp_nombre", nombreCliente);
+            localStorage.setItem("pp_telefono", tlfLimpio);
+            localStorage.setItem("pp_direccion", dirCliente);
+
+            await addDoc(collection(db, "pedidos"), {
+                cliente: nombreCliente,
+                telefono: tlfLimpio,
+                direccion: dirCliente,
+                productos: arrayProductosFactura,
+                totalUSD: total.toFixed(2),
+                totalVES: totalBs,
+                modalidadPago: tipoPago === "credito" ? "A Crédito" : "Contado",
+                estado: "Pendiente",
+                fecha: serverTimestamp()
+            });
+            const datosActualizacionCliente = { nombre: nombreCliente, telefono: tlfLimpio, direccion: dirCliente, fechaUltimoPedido: serverTimestamp() };
+            if (tipoPago === "credito") {
+                datosActualizacionCliente.deuda = increment(total);
+                datosActualizacionCliente.estado = "Con Deuda";
+            }
+            await setDoc(doc(db, "clientes", tlfLimpio), datosActualizacionCliente, { merge: true });
+
+            for (const item of carrito) {
+                await updateDoc(doc(db, "productos", item.id), { stock: increment(-item.cantidad) });
+            }
+            carrito = [];
+            actualizarInterfazCarrito();
+            modalCarrito.classList.add("oculto");
+            window.open("https://wa.me/" + NUMERO_WHATSAPP + "?text=" + encodeURIComponent(mensaje), "_blank");
+        } catch (error) {
+            Swal.fire({ title: "Error", text: "Motivo: " + error.message, icon: "error" });
+        } finally {
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+        }
+    });
+
+    function actualizarInterfazCarrito() {
+        const totalArticulos = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+        contadorCarrito.textContent = totalArticulos;
+        if (totalArticulos > 0) {
+            btnCarritoFlotante.classList.remove("oculto");
+        } else {
+            btnCarritoFlotante.classList.add("oculto");
+        }
+    }
+
+    function renderizarListaCarrito() {
+        listaCarritoDiv.innerHTML = "";
+        let total = 0;
+        carrito.forEach(item => {
+            const precioNum = typeof item.precio === 'number' ? item.precio : parseFloat(item.precio || 0);
+            const subtotal = item.cantidad * precioNum;
+            total += subtotal;
+            const div = document.createElement("div");
+            div.classList.add("item-carrito");
+            div.innerHTML =
+                '<div class="info-item-carrito">' +
+                    '<h4>' + item.nombre + '</h4>' +
+                    '<p style="font-size: 13px; color: #bbb;">' + fmtUSD(precioNum) + ' (Bs. ' + (precioNum * tasaBCV).toFixed(2) + ') c/u</p>' +
+                '</div>' +
+                '<div class="controles-cantidad">' +
+                    '<button class="btn-cantidad" data-id="' + item.id + '" data-accion="restar">-</button>' +
+                    '<span style="color: white; font-weight: bold; width: 20px; text-align: center;">' + item.cantidad + '</span>' +
+                    '<button class="btn-cantidad" data-id="' + item.id + '" data-accion="sumar">+</button>' +
+                '</div>';
+            listaCarritoDiv.appendChild(div);
+        });
+        totalPrecioSpan.textContent = total.toFixed(2);
+        totalPrecioBsSpan.textContent = (total * tasaBCV).toFixed(2);
+    }
+});
