@@ -17,6 +17,10 @@ document.head.appendChild(linkTema);
 
 const fixSwal = document.createElement('style');
 fixSwal.innerHTML = `
+    html, body {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
     .swal2-popup .swal2-input {
         width: 80% !important;
         margin: 1.5em auto !important;
@@ -29,33 +33,60 @@ fixSwal.innerHTML = `
         border-left: 5px solid #e91e63 !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
     }
-    #pos-btn-ia {
-        flex: 1 1 auto !important;
+    #modulo-pos, #modulo-gastos, #modulo-proveedores {
+        width: 100% !important;
+        max-width: 800px !important;
+        margin: 0 auto !important;
+        padding: 15px !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+    #modulo-pos *, #modulo-gastos *, #modulo-proveedores * {
+        box-sizing: border-box !important;
+        max-width: 100% !important;
+    }
+    #btn-volver-admin-pos, #btn-volver-admin-gas, #btn-volver-admin-prov {
         width: auto !important;
+        display: inline-flex !important;
+    }
+    #pos-select-cliente, #pos-tipo-pago {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+    #pos-btn-ia {
+        flex: 1 1 0 !important;
+        width: auto !important;
+        min-width: 0 !important;
         margin: 0 !important;
-        white-space: nowrap !important;
+        padding: 12px 10px !important;
+        font-size: 14px !important;
+        white-space: normal !important;
     }
     #pos-btn-ia-limpiar {
         flex: 0 0 auto !important;
         width: auto !important;
-        min-width: 95px !important;
+        min-width: 80px !important;
         margin: 0 !important;
+        padding: 12px 12px !important;
+        font-size: 13px !important;
         white-space: nowrap !important;
     }
     #pos-select-producto {
-        flex: 1 1 auto !important;
-        width: auto !important;
+        flex: 1 1 0 !important;
+        width: 0 !important;
         min-width: 0 !important;
+        max-width: 100% !important;
         margin: 0 !important;
     }
     #pos-cantidad {
-        flex: 0 0 65px !important;
-        width: 65px !important;
+        flex: 0 0 56px !important;
+        width: 56px !important;
         margin: 0 !important;
     }
     #pos-btn-agregar {
-        flex: 0 0 50px !important;
-        width: 50px !important;
+        flex: 0 0 46px !important;
+        width: 46px !important;
         margin: 0 !important;
     }
 `;
@@ -189,7 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!moduloProveedores) {
         moduloProveedores = document.createElement("div");
         moduloProveedores.id = "modulo-proveedores";
-        moduloProveedores.classList.add("oculto");
+        moduloProveedores.className = "container oculto";
         moduloProveedores.innerHTML = `
             <div style="text-align: left; margin-bottom: 20px;">
                 <button id="btn-volver-admin-prov" style="background-color: transparent; color: #ff9800; padding: 8px 16px; border: 1px solid #ff9800; border-radius: 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; width: max-content; transition: all 0.2s;">
@@ -439,7 +470,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!moduloGastos) {
         moduloGastos = document.createElement("div");
         moduloGastos.id = "modulo-gastos";
-        moduloGastos.classList.add("oculto");
+        moduloGastos.className = "container oculto";
         moduloGastos.innerHTML = `
             <div style="text-align: left; margin-bottom: 20px;">
                 <button id="btn-volver-admin-gas" style="background-color: transparent; color: #ff80ab; padding: 8px 16px; border: 1px solid #e91e63; border-radius: 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; width: max-content; transition: all 0.2s;">
@@ -693,7 +724,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 div.innerHTML =
                     '<div style="display: flex; justify-content: space-between; margin-bottom: 5px;">' +
                         '<strong style="color: white; font-size: 15px;">' + gasto.concepto + '</strong>' +
-                        '<button class="btn-eliminar-gas" data-id="' + gasto.id + '" data-tipo="' + gasto.tipo + '" data-prodid="' + (gasto.productoId || '') + '" data-cant="' + (gasto.cantidad || 0) + '" style="background: none; border: none; cursor: pointer; font-size: 18px;">🗑️</button>' +
+                        '<button class="btn-eliminar-gas" data-id="' + gasto.id + '" data-tipo="' + gasto.tipo + '" data-prodid="' + (gasto.productoId || '') + '" data-cant="' + (gasto.cantidad || 0) + '" style="background: none; border: none; cursor: pointer; font-size: 18px; width: auto; margin: 0;">🗑️</button>' +
                     '</div>' +
                     '<div style="margin-bottom: 8px;">' + badgeTipo + '</div>' +
                     '<div style="display: flex; justify-content: space-between; align-items: center; color: #bbb; font-size: 12px;">' +
@@ -766,31 +797,31 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!moduloPos) {
         moduloPos = document.createElement("div");
         moduloPos.id = "modulo-pos";
-        moduloPos.classList.add("oculto");
+        moduloPos.className = "container oculto";
         moduloPos.innerHTML = `
-            <div style="text-align: left; margin-bottom: 20px;">
-                <button id="btn-volver-admin-pos" style="background-color: transparent; color: #00bcd4; padding: 8px 16px; border: 1px solid #00bcd4; border-radius: 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; width: max-content; transition: all 0.2s;">
+            <div style="text-align: left; margin-bottom: 16px;">
+                <button id="btn-volver-admin-pos" style="background-color: transparent; color: #00bcd4; padding: 8px 16px; border: 1px solid #00bcd4; border-radius: 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; width: auto; transition: all 0.2s;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/></svg>
                     Volver al Panel
                 </button>
             </div>
-            <h2 style="text-align: center; color: #00bcd4; margin-bottom: 10px;">📝 Crear Pedido Manual</h2>
-            <p style="text-align: center; font-size: 13px; color: #aaa; margin-bottom: 20px;">Registra compras de ventanilla o clientes que no usan la App.</p>
+            <h2 style="text-align: center; color: #00bcd4; margin-bottom: 8px;">📝 Crear Pedido Manual</h2>
+            <p style="text-align: center; font-size: 13px; color: #aaa; margin-bottom: 18px;">Registra compras de ventanilla o clientes que no usan la App.</p>
 
-            <div style="background-color: #161824; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #7c4dff;">
-                <h3 style="color: #b388ff; margin-top: 0; font-size: 15px; border-bottom: 1px solid #2e294e; padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="background-color: #161824; padding: 14px; border-radius: 6px; margin-bottom: 18px; border: 1px solid #7c4dff;">
+                <h3 style="color: #b388ff; margin-top: 0; font-size: 14px; border-bottom: 1px solid #2e294e; padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <span>✨ Pegar Mensaje de WhatsApp (Opcional)</span>
-                    <span style="font-size: 11px; background: #2e294e; color: #d1c4e9; padding: 2px 8px; border-radius: 10px;">IA</span>
+                    <span style="font-size: 11px; background: #2e294e; color: #d1c4e9; padding: 2px 8px; border-radius: 10px; flex-shrink: 0;">IA</span>
                 </h3>
                 <p style="font-size: 12px; color: #bbb; margin-top: 0; margin-bottom: 10px;">Pega el mensaje del cliente y la IA rellenará los datos y el carrito automáticamente.</p>
                 <textarea id="pos-ia-texto" rows="3" placeholder="Ej: Hola, soy María (0412-1234567), apártame 2 cocuy clarito y 1 casabe, envío a Puerta Maraven..." style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin-bottom: 10px; box-sizing: border-box; font-family: inherit; resize: vertical;"></textarea>
                 <div style="display: flex; gap: 8px; align-items: stretch; width: 100%;">
-                    <button type="button" id="pos-btn-ia" style="flex: 1 1 auto; width: auto; margin: 0; background-color: #7c4dff; color: white; padding: 12px 16px; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; cursor: pointer;">✨ Armar Pedido con IA</button>
-                    <button type="button" id="pos-btn-ia-limpiar" style="flex: 0 0 auto; width: auto; min-width: 95px; margin: 0; background-color: #333; color: #ccc; padding: 12px 16px; border: none; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer;">Limpiar</button>
+                    <button type="button" id="pos-btn-ia" style="flex: 1 1 0; width: auto; min-width: 0; margin: 0; background-color: #7c4dff; color: white; padding: 12px 10px; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; cursor: pointer;">✨ Armar Pedido con IA</button>
+                    <button type="button" id="pos-btn-ia-limpiar" style="flex: 0 0 auto; width: auto; min-width: 80px; margin: 0; background-color: #333; color: #ccc; padding: 12px 12px; border: none; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer;">Limpiar</button>
                 </div>
             </div>
 
-            <div style="background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333;">
+            <div style="background-color: #1a1a1a; padding: 14px; border-radius: 6px; margin-bottom: 18px; border: 1px solid #333;">
                 <h3 style="color: #fff; margin-top: 0; font-size: 15px; border-bottom: 1px solid #333; padding-bottom: 8px;">1. Datos del Cliente</h3>
                 <select id="pos-select-cliente" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin-bottom: 10px;">
                     <option value="">-- Buscar en directorio (Opcional) --</option>
@@ -800,14 +831,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 <input type="text" id="pos-direccion" placeholder="Dirección (Opcional)" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; box-sizing: border-box;">
             </div>
 
-            <div style="background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333;">
+            <div style="background-color: #1a1a1a; padding: 14px; border-radius: 6px; margin-bottom: 18px; border: 1px solid #333;">
                 <h3 style="color: #fff; margin-top: 0; font-size: 15px; border-bottom: 1px solid #333; padding-bottom: 8px;">2. Agregar Productos</h3>
                 <div style="display: flex; gap: 8px; margin-bottom: 15px; align-items: stretch; width: 100%;">
-                    <select id="pos-select-producto" style="flex: 1 1 auto; width: auto; min-width: 0; margin: 0; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
+                    <select id="pos-select-producto" style="flex: 1 1 0; width: 0; min-width: 0; margin: 0; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
                         <option value="">Selecciona producto...</option>
                     </select>
-                    <input type="number" id="pos-cantidad" value="1" min="1" style="flex: 0 0 65px; width: 65px; margin: 0; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; text-align: center; box-sizing: border-box;">
-                    <button id="pos-btn-agregar" style="flex: 0 0 50px; width: 50px; margin: 0; background-color: #4caf50; color: white; border: none; border-radius: 4px; padding: 0; font-weight: bold; cursor: pointer; font-size: 20px;">+</button>
+                    <input type="number" id="pos-cantidad" value="1" min="1" style="flex: 0 0 56px; width: 56px; margin: 0; padding: 10px 6px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; text-align: center; box-sizing: border-box;">
+                    <button id="pos-btn-agregar" style="flex: 0 0 46px; width: 46px; margin: 0; background-color: #4caf50; color: white; border: none; border-radius: 4px; padding: 0; font-weight: bold; cursor: pointer; font-size: 20px;">+</button>
                 </div>
                 <div id="pos-lista-carrito" style="margin-bottom: 15px; min-height: 50px;">
                     <p style="color: #666; font-size: 13px; text-align: center; padding-top: 15px;">El carrito interno está vacío.</p>
@@ -818,7 +849,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             </div>
 
-            <div style="background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333;">
+            <div style="background-color: #1a1a1a; padding: 14px; border-radius: 6px; margin-bottom: 18px; border: 1px solid #333;">
                 <h3 style="color: #fff; margin-top: 0; font-size: 15px; border-bottom: 1px solid #333; padding-bottom: 8px;">3. Finalizar</h3>
                 <select id="pos-tipo-pago" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin-bottom: 15px;">
                     <option value="contado">Pago al Contado (Completo)</option>
@@ -918,13 +949,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         const cantPedida = Math.max(1, parseInt(itemIa.cantidad) || 1);
 
                         if (stockDisp <= 0) {
-                            avisosStock.push('🚫 "' + prodDb.nombre + '" está agotado (pidió ' + cantPedida + ').');
+                            avisosStock.push('🚫 <strong>"' + prodDb.nombre + '"</strong> está agotado en inventario (el cliente pidió ' + cantPedida + ').');
                             return;
                         }
 
                         if (cantPedida > stockDisp) {
                             carritoAdmin.push(Object.assign({}, prodDb, { cantidad: stockDisp }));
-                            avisosStock.push('⚠️ "' + prodDb.nombre + '": pidió ' + cantPedida + ', se ajustó al stock disponible (' + stockDisp + ').');
+                            avisosStock.push('⚠️ <strong>"' + prodDb.nombre + '"</strong>: pidió ' + cantPedida + ', se ajustó al stock disponible (' + stockDisp + ').');
                         } else {
                             carritoAdmin.push(Object.assign({}, prodDb, { cantidad: cantPedida }));
                         }
@@ -934,18 +965,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 renderizarCarritoAdmin();
 
                 const notasExtra = [];
-                if (resultado.observaciones && resultado.observaciones.trim()) {
-                    notasExtra.push("📝 " + resultado.observaciones.trim());
-                }
                 if (avisosStock.length > 0) {
                     avisosStock.forEach(a => notasExtra.push(a));
+                }
+                if (resultado.observaciones && resultado.observaciones.trim()) {
+                    notasExtra.push("📝 " + resultado.observaciones.trim());
                 }
 
                 if (notasExtra.length > 0) {
                     const htmlNotas = notasExtra.map(n => '<p style="margin:6px 0;">' + n + '</p>').join("");
                     Swal.fire({
                         icon: carritoAdmin.length > 0 ? "info" : "warning",
-                        title: carritoAdmin.length > 0 ? "Pedido armado con observaciones" : "Revisa el mensaje",
+                        title: carritoAdmin.length > 0 ? "Pedido armado con avisos de stock" : "Mercancía agotada o no encontrada",
                         html: '<div style="text-align:left; font-size:14px; line-height:1.5;">' + htmlNotas + '</div>',
                         confirmButtonColor: "#7c4dff"
                     });
@@ -1071,11 +1102,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const subtotal = item.cantidad * precio;
             total += subtotal;
             const div = document.createElement("div");
-            div.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: #222; padding: 8px; margin-bottom: 5px; border-radius: 4px; border-left: 3px solid #00bcd4;";
+            div.style.cssText = "display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #222; padding: 8px; margin-bottom: 5px; border-radius: 4px; border-left: 3px solid #00bcd4;";
             div.innerHTML =
-                '<div style="flex: 1; color: #fff; font-size: 14px; margin-left: 8px;">' + item.cantidad + 'x ' + item.nombre + '</div>' +
-                '<div style="color: #81c784; font-weight: bold; margin-right: 15px;">' + fmtUSD(subtotal) + '</div>' +
-                '<button class="pos-btn-quitar" data-index="' + index + '" style="background: none; border: none; color: #f44336; cursor: pointer; font-size: 18px; padding: 0; width: auto; margin: 0;">✖</button>';
+                '<div style="flex: 1; min-width: 0; color: #fff; font-size: 14px; margin-left: 4px; word-break: break-word;">' + item.cantidad + 'x ' + item.nombre + '</div>' +
+                '<div style="color: #81c784; font-weight: bold; white-space: nowrap;">' + fmtUSD(subtotal) + '</div>' +
+                '<button class="pos-btn-quitar" data-index="' + index + '" style="background: none; border: none; color: #f44336; cursor: pointer; font-size: 18px; padding: 0 4px; width: auto; margin: 0; flex-shrink: 0;">✖</button>';
             posListaCarrito.appendChild(div);
         });
         posTotalUsd.textContent = total.toFixed(2);
