@@ -29,6 +29,35 @@ fixSwal.innerHTML = `
         border-left: 5px solid #e91e63 !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
     }
+    #pos-btn-ia {
+        flex: 1 1 auto !important;
+        width: auto !important;
+        margin: 0 !important;
+        white-space: nowrap !important;
+    }
+    #pos-btn-ia-limpiar {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        min-width: 95px !important;
+        margin: 0 !important;
+        white-space: nowrap !important;
+    }
+    #pos-select-producto {
+        flex: 1 1 auto !important;
+        width: auto !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+    }
+    #pos-cantidad {
+        flex: 0 0 65px !important;
+        width: 65px !important;
+        margin: 0 !important;
+    }
+    #pos-btn-agregar {
+        flex: 0 0 50px !important;
+        width: 50px !important;
+        margin: 0 !important;
+    }
 `;
 document.head.appendChild(fixSwal);
 
@@ -755,9 +784,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 </h3>
                 <p style="font-size: 12px; color: #bbb; margin-top: 0; margin-bottom: 10px;">Pega el mensaje del cliente y la IA rellenará los datos y el carrito automáticamente.</p>
                 <textarea id="pos-ia-texto" rows="3" placeholder="Ej: Hola, soy María (0412-1234567), apártame 2 cocuy clarito y 1 casabe, envío a Puerta Maraven..." style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; margin-bottom: 10px; box-sizing: border-box; font-family: inherit; resize: vertical;"></textarea>
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" id="pos-btn-ia" style="flex: 1; background-color: #7c4dff; color: white; padding: 11px; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; cursor: pointer;">✨ Armar Pedido con IA</button>
-                    <button type="button" id="pos-btn-ia-limpiar" style="background-color: #333; color: #ccc; padding: 11px 14px; border: none; border-radius: 4px; font-size: 13px; cursor: pointer;">Limpiar</button>
+                <div style="display: flex; gap: 8px; align-items: stretch; width: 100%;">
+                    <button type="button" id="pos-btn-ia" style="flex: 1 1 auto; width: auto; margin: 0; background-color: #7c4dff; color: white; padding: 12px 16px; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; cursor: pointer;">✨ Armar Pedido con IA</button>
+                    <button type="button" id="pos-btn-ia-limpiar" style="flex: 0 0 auto; width: auto; min-width: 95px; margin: 0; background-color: #333; color: #ccc; padding: 12px 16px; border: none; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer;">Limpiar</button>
                 </div>
             </div>
 
@@ -773,12 +802,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
             <div style="background-color: #1a1a1a; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #333;">
                 <h3 style="color: #fff; margin-top: 0; font-size: 15px; border-bottom: 1px solid #333; padding-bottom: 8px;">2. Agregar Productos</h3>
-                <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-                    <select id="pos-select-producto" style="flex: 1; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
+                <div style="display: flex; gap: 8px; margin-bottom: 15px; align-items: stretch; width: 100%;">
+                    <select id="pos-select-producto" style="flex: 1 1 auto; width: auto; min-width: 0; margin: 0; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
                         <option value="">Selecciona producto...</option>
                     </select>
-                    <input type="number" id="pos-cantidad" value="1" min="1" style="width: 60px; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; text-align: center;">
-                    <button id="pos-btn-agregar" style="background-color: #4caf50; color: white; border: none; border-radius: 4px; padding: 0 15px; font-weight: bold; cursor: pointer; font-size: 20px;">+</button>
+                    <input type="number" id="pos-cantidad" value="1" min="1" style="flex: 0 0 65px; width: 65px; margin: 0; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; text-align: center; box-sizing: border-box;">
+                    <button id="pos-btn-agregar" style="flex: 0 0 50px; width: 50px; margin: 0; background-color: #4caf50; color: white; border: none; border-radius: 4px; padding: 0; font-weight: bold; cursor: pointer; font-size: 20px;">+</button>
                 </div>
                 <div id="pos-lista-carrito" style="margin-bottom: 15px; min-height: 50px;">
                     <p style="color: #666; font-size: 13px; text-align: center; padding-top: 15px;">El carrito interno está vacío.</p>
@@ -1046,7 +1075,7 @@ document.addEventListener("DOMContentLoaded", () => {
             div.innerHTML =
                 '<div style="flex: 1; color: #fff; font-size: 14px; margin-left: 8px;">' + item.cantidad + 'x ' + item.nombre + '</div>' +
                 '<div style="color: #81c784; font-weight: bold; margin-right: 15px;">' + fmtUSD(subtotal) + '</div>' +
-                '<button class="pos-btn-quitar" data-index="' + index + '" style="background: none; border: none; color: #f44336; cursor: pointer; font-size: 18px; padding: 0;">✖</button>';
+                '<button class="pos-btn-quitar" data-index="' + index + '" style="background: none; border: none; color: #f44336; cursor: pointer; font-size: 18px; padding: 0; width: auto; margin: 0;">✖</button>';
             posListaCarrito.appendChild(div);
         });
         posTotalUsd.textContent = total.toFixed(2);
