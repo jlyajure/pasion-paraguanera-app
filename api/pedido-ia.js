@@ -211,8 +211,8 @@ module.exports = async function handler(req, res) {
 
     const prompt =
       'Eres el asistente de toma de pedidos de la tienda "Pasión Paraguanera" en Venezuela.\n' +
-      'Analiza el mensaje de WhatsApp de un cliente y extrae sus datos y los productos solicitados cruzándolos ÚNICAMENTE con el catálogo disponible.\n\n' +
-      'Catálogo actual de la tienda (JSON):\n' +
+      'Analiza el mensaje de WhatsApp de un cliente y extrae sus datos y los productos solicitados cruzándolos con el catálogo completo de la tienda (incluyendo productos que tengan stock 0).\n\n' +
+      'Catálogo completo de la tienda (JSON):\n' +
       JSON.stringify(catalogoResumido) + '\n\n' +
       'Mensaje del cliente por WhatsApp:\n"""\n' +
       mensaje + '\n"""\n\n' +
@@ -235,9 +235,10 @@ module.exports = async function handler(req, res) {
       '  "observaciones": ""\n' +
       '}\n' +
       '2. Si el mensaje no menciona nombre, teléfono o dirección del cliente, deja esos campos como cadena vacía "".\n' +
-      '3. En "items", usa SOLO el "id" y "nombre" exactos de los productos del catálogo que coincidan con lo que pidió el cliente. Si pide algo que no existe en el catálogo, menciónalo brevemente en "observaciones".\n' +
-      '4. "cantidad" debe ser siempre un número entero positivo (si no especifica cantidad, asume 1).\n' +
-      '5. En "tipoPago", usa "credito" si el cliente pide fiado, abono o crédito; de lo contrario usa "contado".';
+      '3. En "items", usa SOLO el "id" y "nombre" exactos de los productos del catálogo que coincidan con lo que pidió el cliente. IMPORTANTE: Aunque un producto tenga "stock": 0, DEBES incluirlo igual en "items" para que el sistema avise automáticamente al dueño que esa mercancía está agotada.\n' +
+      '4. Si el cliente pide un producto que NO existe en absoluto dentro del catálogo, indícalo brevemente en "observaciones".\n' +
+      '5. "cantidad" debe ser siempre un número entero positivo (si no especifica cantidad, asume 1).\n' +
+      '6. En "tipoPago", usa "credito" si el cliente pide fiado, abono o crédito; de lo contrario usa "contado".';
 
     const modelos = await obtenerModelosDiversos(apiKey);
     let textoRespuesta = null;
