@@ -1,9 +1,9 @@
-async function obtenerModelosDisponibles(apiKey) {
+async function obtenerModelosDiversos(apiKey) {
   const respaldo = [
-    'gemini-2.5-flash-lite',
-    'gemini-2.5-flash',
     'gemini-flash-latest',
-    'gemini-2.0-flash'
+    'gemini-3.5-flash',
+    'gemini-pro-latest',
+    'gemini-3.5-flash-lite'
   ];
 
   try {
@@ -21,7 +21,8 @@ async function obtenerModelosDisponibles(apiKey) {
 
     const excluidos = [
       'embedding', 'imagen', 'veo', 'tts', 'audio', 'live',
-      'robotics', 'computer-use', 'deep-research', 'aqa', 'vision', 'image', 'gemma'
+      'robotics', 'computer-use', 'deep-research', 'aqa', 'vision', 'image', 'gemma',
+      'gemini-1.', 'gemini-2.0', 'gemini-2.5'
     ];
 
     const validos = data.models
@@ -37,26 +38,148 @@ async function obtenerModelosDisponibles(apiKey) {
 
     if (validos.length === 0) return respaldo;
 
-    const puntaje = (nombre) => {
-      const low = nombre.toLowerCase();
-      let p = 50;
-      if (low.includes('flash-lite')) p = 10;
-      else if (low.includes('flash')) p = 20;
-      else if (low.includes('pro')) p = 40;
-      if (low.includes('exp') || low.includes('preview')) p += 5;
-      return p;
+    const flashNormal = validos
+      .filter((n) => n.toLowerCase().includes('flash') && !n.toLowerCase().includes('lite'))
+      .sort((a, b) => b.localeCompare(a));
+
+    const proModels = validos
+      .filter((n) => n.toLowerCase().includes('pro'))
+      .sort((a, b) => b.localeCompare(a));
+
+    const flashLite = validos
+      .filter((n) => n.toLowerCase().includes('flash') && n.toLowerCase().includes('lite'))
+      .sort((a, b) => b.localeCompare(a));
+
+    const otros = validos
+      .filter((n) => !flashNormal.includes(n) && !proModels.includes(n) && !flashLite.includes(n))
+      .sort((a, b) => b.localeCompare(a));
+
+    const seleccion = [];
+    const agregar = (arr, idx) => {
+      if (arr[idx] && !seleccion.includes(arr[idx])) seleccion.push(arr[idx]);
     };
 
-    validos.sort((a, b) => {
-      const diff = puntaje(a) - puntaje(b);
-      if (diff !== 0) return diff;
-      return b.localeCompare(a);
-    });
+    agregar(flashNormal, 0);
+    agregar(proModels, 0);
+    agregar(flashNormal, 1);
+    agregar(flashLite, 0);
+    agregar(proModels, 1);
+    agregar(otros, 0);
 
-    return validos.slice(0, 4);
+    return seleccion.length > 0 ? seleccion.slice(0, 4) : respaldo;
   } catch (err) {
     return respaldo;
   }
+}
+
+function normalizarTexto(texto) {
+  return String(texto || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/(\d)([a-z])/g, (_, num, letra) => num + ' ' + letra)
+    .replace(/[^a-z0-9.,\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extraerPedidoRespaldoLocal(mensaje, catalogo) {
+  const textoOriginal = String(mensaje || '').trim();
+  const textoNorm = normalizarTexto(textoOriginal);
+
+  let telefono = '';
+  const matchTlf = textoOriginal.match(/(?:\+?58[\s-]?)?(?:0?4(?:12|14|16|24|26))[\s.-]?\d{3}[\s.-]?\d{4}/);
+  if (matchTlf) {
+    telefono = matchTlf[0].replace(/\D/g, '');
+  }
+
+  let nombre = '';
+  const matchNombre = textoOriginal.match(/(?:soy|me llamo|mi nombre es)\s+([A-Za-zÁÉÍÓÚáéíóúÑñ]+(?:\s+[A-Za-zÁÉÍÓÚáéíóúÑñ]+){0,2})/i);
+  if (matchNombre) {
+    nombre = matchNombre[1].trim();
+  }
+
+  let direccion = '';
+  const matchDir = textoOriginal.match(/(?:direcci[oó]n|direci[oó]n|env[ií]o a|entregar en|ubicaci[oó]n)\s*[:\-]?\s*([^.\n;]+)/i);
+  if (matchDir) {
+    direccion = matchDir[1].trim();
+  }
+
+  const tipoPago = /\b(fiado|credito|cr[eé]dito|abono|cuotas)\b/i.test(textoOriginal)
+    ? 'credito'
+    : 'contado';
+
+  const palabrasIgnoradas = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'en', 'con', 'para', 'por', 'y', 'a', 'lts', 'lt', 'litro', 'litros']);
+  const numerosTexto = {
+    un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5,
+    seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10
+  };
+
+  const items = [];
+  if (Array.isArray(catalogo)) {
+    const candidatos = [];
+
+    catalogo.forEach((prod) => {
+      const nombreProdNorm = normalizarTexto(prod.nombre);
+      const palabrasProd = nombreProdNorm
+        .split(' ')
+        .filter((w) => w.length >= 2 && !palabrasIgnoradas.has(w));
+
+      if (palabrasProd.length === 0) return;
+
+      let coincidencias = 0;
+      let palabraPrincipal = '';
+      palabrasProd.forEach((w) => {
+        if (textoNorm.includes(w)) {
+          coincidencias++;
+          if (!palabraPrincipal && /[a-z]/.test(w)) palabraPrincipal = w;
+        }
+      });
+
+      const proporcion = coincidencias / palabrasProd.length;
+      if (coincidencias >= 2 || (palabrasProd.length === 1 && coincidencias === 1) || proporcion >= 0.5) {
+        candidatos.push({
+          prod,
+          coincidencias,
+          proporcion,
+          palabraPrincipal: palabraPrincipal || palabrasProd[0]
+        });
+      }
+    });
+
+    candidatos.sort((a, b) => {
+      if (b.coincidencias !== a.coincidencias) return b.coincidencias - a.coincidencias;
+      return b.proporcion - a.proporcion;
+    });
+
+    const clavesUsadas = new Set();
+    candidatos.forEach((cand) => {
+      const clave = cand.palabraPrincipal;
+      if (clavesUsadas.has(clave)) return;
+      clavesUsadas.add(clave);
+
+      let cantidad = 1;
+      const regexCant = new RegExp('(\\d+|\\b(?:un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\\b)\\s+(?:[a-z0-9.]+\\s+){0,2}' + clave, 'i');
+      const matchCant = textoNorm.match(regexCant);
+      if (matchCant) {
+        const raw = matchCant[1].toLowerCase();
+        cantidad = numerosTexto[raw] || parseInt(raw, 10) || 1;
+      }
+
+      items.push({
+        id: cand.prod.id,
+        nombre: cand.prod.nombre,
+        cantidad: cantidad
+      });
+    });
+  }
+
+  return {
+    cliente: { nombre, telefono, direccion },
+    items,
+    tipoPago,
+    observaciones: 'Los servidores de Gemini estaban ocupados en este momento, así que se usó el lector de respaldo local. Verifica los productos antes de procesar.'
+  };
 }
 
 module.exports = async function handler(req, res) {
@@ -116,14 +239,13 @@ module.exports = async function handler(req, res) {
       '4. "cantidad" debe ser siempre un número entero positivo (si no especifica cantidad, asume 1).\n' +
       '5. En "tipoPago", usa "credito" si el cliente pide fiado, abono o crédito; de lo contrario usa "contado".';
 
-    const modelos = await obtenerModelosDisponibles(apiKey);
-    const errores = [];
+    const modelos = await obtenerModelosDiversos(apiKey);
     let textoRespuesta = null;
 
     for (const modelo of modelos) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 12000);
+        const timeoutId = setTimeout(() => controller.abort(), 9000);
 
         const url =
           'https://generativelanguage.googleapis.com/v1beta/models/' +
@@ -156,21 +278,15 @@ module.exports = async function handler(req, res) {
             textoRespuesta = texto;
             break;
           }
-          errores.push(modelo + ': respuesta vacía');
-        } else {
-          const msg = (data && data.error && data.error.message) ? data.error.message : ('HTTP ' + response.status);
-          errores.push(modelo + ': ' + msg);
         }
       } catch (errModelo) {
-        const motivo = errModelo.name === 'AbortError' ? 'tiempo agotado' : errModelo.message;
-        errores.push(modelo + ': ' + motivo);
+        console.warn('Modelo no disponible:', modelo, errModelo.message);
       }
     }
 
     if (!textoRespuesta) {
-      return res.status(502).json({
-        error: 'No se pudo completar con la IA. Detalle: ' + errores.join(' | ')
-      });
+      const respaldoLocal = extraerPedidoRespaldoLocal(mensaje, catalogoResumido);
+      return res.status(200).json(respaldoLocal);
     }
 
     const inicioJson = textoRespuesta.indexOf('{');
