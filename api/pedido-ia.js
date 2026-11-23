@@ -77,20 +77,31 @@ function normalizarTexto(texto) {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/(\d),(\d)/g, (_, a, b) => a + '.' + b)
     .replace(/(\d)([a-z])/g, (_, num, letra) => num + ' ' + letra)
-    .replace(/[^a-z0-9.,\s]/g, ' ')
+    .replace(/[^a-z0-9.\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
+function mensajeContienePalabra(palabrasMensaje, w) {
+  if (palabrasMensaje.has(w)) return true;
+  if (w.length >= 4) {
+    if (palabrasMensaje.has(w + 's')) return true;
+    if (w.endsWith('s') && palabrasMensaje.has(w.slice(0, -1))) return true;
+  }
+  return false;
+}
+
 function extraerPedidoRespaldoLocal(mensaje, catalogo) {
   const textoOriginal = String(mensaje || '').trim();
-  const textoNorm = normalizarTexto(textoOriginal);
 
   let telefono = '';
+  let textoSinTelefono = textoOriginal;
   const matchTlf = textoOriginal.match(/(?:\+?58[\s-]?)?(?:0?4(?:12|14|16|24|26))[\s.-]?\d{3}[\s.-]?\d{4}/);
   if (matchTlf) {
     telefono = matchTlf[0].replace(/\D/g, '');
+    textoSinTelefono = textoOriginal.replace(matchTlf[0], ' ');
   }
 
   let nombre = '';
@@ -109,55 +120,72 @@ function extraerPedidoRespaldoLocal(mensaje, catalogo) {
     ? 'credito'
     : 'contado';
 
-  const palabrasIgnoradas = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'en', 'con', 'para', 'por', 'y', 'a', 'lts', 'lt', 'litro', 'litros']);
+  const textoNorm = normalizarTexto(textoSinTelefono);
+  const palabrasMensaje = new Set(textoNorm.split(' ').filter(Boolean));
+
+  const palabrasIgnoradas = new Set([
+    'de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'en', 'con',
+    'para', 'por', 'y', 'a', 'lts', 'lt', 'litro', 'litros', 'gr', 'grs', 'kg', 'ml', 'cc'
+  ]);
   const numerosTexto = {
     un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5,
     seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10
   };
 
   const items = [];
+  const avisosAmbiguedad = [];
+
   if (Array.isArray(catalogo)) {
-    const candidatos = [];
+    const grupos = {};
 
     catalogo.forEach((prod) => {
       const nombreProdNorm = normalizarTexto(prod.nombre);
       const palabrasProd = nombreProdNorm
         .split(' ')
-        .filter((w) => w.length >= 2 && !palabrasIgnoradas.has(w));
+        .filter((w) => w.length >= 1 && !palabrasIgnoradas.has(w));
 
       if (palabrasProd.length === 0) return;
 
+      const palabraPrincipal = palabrasProd.find((w) => /[a-z]{3,}/.test(w)) || palabrasProd[0];
+      if (!mensajeContienePalabra(palabrasMensaje, palabraPrincipal)) return;
+
       let coincidencias = 0;
-      let palabraPrincipal = '';
       palabrasProd.forEach((w) => {
-        if (textoNorm.includes(w)) {
+        if (mensajeContienePalabra(palabrasMensaje, w)) {
           coincidencias++;
-          if (!palabraPrincipal && /[a-z]/.test(w)) palabraPrincipal = w;
         }
       });
 
       const proporcion = coincidencias / palabrasProd.length;
-      if (coincidencias >= 2 || (palabrasProd.length === 1 && coincidencias === 1) || proporcion >= 0.5) {
-        candidatos.push({
-          prod,
-          coincidencias,
-          proporcion,
-          palabraPrincipal: palabraPrincipal || palabrasProd[0]
-        });
+      if (!grupos[palabraPrincipal]) grupos[palabraPrincipal] = [];
+      grupos[palabraPrincipal].push({
+        prod,
+        coincidencias,
+        proporcion
+      });
+    });
+
+    Object.keys(grupos).forEach((clave) => {
+      const grupo = grupos[clave];
+      grupo.sort((a, b) => {
+        if (b.coincidencias !== a.coincidencias) return b.coincidencias - a.coincidencias;
+        return b.proporcion - a.proporcion;
+      });
+
+      const hayEmpate = grupo.length > 1 && grupo[0].coincidencias === grupo[1].coincidencias;
+
+      if (hayEmpate) {
+        const opcionesTxt = grupo
+          .map((c) => {
+            const st = parseInt(c.prod.stock, 10) || 0;
+            return c.prod.nombre + (st > 0 ? ' (Disponible: ' + st + ')' : ' (Agotado)');
+          })
+          .join(' / ');
+        avisosAmbiguedad.push('Confirmar presentación de "' + clave + '": ' + opcionesTxt + '.');
+        return;
       }
-    });
 
-    candidatos.sort((a, b) => {
-      if (b.coincidencias !== a.coincidencias) return b.coincidencias - a.coincidencias;
-      return b.proporcion - a.proporcion;
-    });
-
-    const clavesUsadas = new Set();
-    candidatos.forEach((cand) => {
-      const clave = cand.palabraPrincipal;
-      if (clavesUsadas.has(clave)) return;
-      clavesUsadas.add(clave);
-
+      const ganador = grupo[0];
       let cantidad = 1;
       const regexCant = new RegExp('(\\d+|\\b(?:un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\\b)\\s+(?:[a-z0-9.]+\\s+){0,2}' + clave, 'i');
       const matchCant = textoNorm.match(regexCant);
@@ -167,18 +195,24 @@ function extraerPedidoRespaldoLocal(mensaje, catalogo) {
       }
 
       items.push({
-        id: cand.prod.id,
-        nombre: cand.prod.nombre,
+        id: ganador.prod.id,
+        nombre: ganador.prod.nombre,
         cantidad: cantidad
       });
     });
   }
 
+  const obs = [];
+  if (avisosAmbiguedad.length > 0) {
+    obs.push(avisosAmbiguedad.join(' '));
+  }
+  obs.push('(Procesado con lector de respaldo local porque Gemini estuvo ocupado; revisa los datos antes de confirmar).');
+
   return {
     cliente: { nombre, telefono, direccion },
     items,
     tipoPago,
-    observaciones: 'Los servidores de Gemini estaban ocupados en este momento, así que se usó el lector de respaldo local. Verifica los productos antes de procesar.'
+    observaciones: obs.join(' ')
   };
 }
 
@@ -211,7 +245,7 @@ module.exports = async function handler(req, res) {
 
     const prompt =
       'Eres el asistente de toma de pedidos de la tienda "Pasión Paraguanera" en Venezuela.\n' +
-      'Analiza el mensaje de WhatsApp de un cliente y extrae sus datos y los productos solicitados cruzándolos con el catálogo completo de la tienda (incluyendo productos que tengan stock 0).\n\n' +
+      'Analiza el mensaje de WhatsApp de un cliente y extrae sus datos y los productos solicitados cruzándolos con el catálogo completo de la tienda (incluyendo productos con stock 0).\n\n' +
       'Catálogo completo de la tienda (JSON):\n' +
       JSON.stringify(catalogoResumido) + '\n\n' +
       'Mensaje del cliente por WhatsApp:\n"""\n' +
@@ -235,10 +269,12 @@ module.exports = async function handler(req, res) {
       '  "observaciones": ""\n' +
       '}\n' +
       '2. Si el mensaje no menciona nombre, teléfono o dirección del cliente, deja esos campos como cadena vacía "".\n' +
-      '3. En "items", usa SOLO el "id" y "nombre" exactos de los productos del catálogo que coincidan con lo que pidió el cliente. IMPORTANTE: Aunque un producto tenga "stock": 0, DEBES incluirlo igual en "items" para que el sistema avise automáticamente al dueño que esa mercancía está agotada.\n' +
-      '4. Si el cliente pide un producto que NO existe en absoluto dentro del catálogo, indícalo brevemente en "observaciones".\n' +
-      '5. "cantidad" debe ser siempre un número entero positivo (si no especifica cantidad, asume 1).\n' +
-      '6. En "tipoPago", usa "credito" si el cliente pide fiado, abono o crédito; de lo contrario usa "contado".';
+      '3. MODO SEGURO (AMBIGÜEDAD): Si el cliente pide un producto de forma genérica sin especificar tamaño, peso, sabor o presentación (por ejemplo, pide "un Cocuy" o "un aceite de coco") y en el catálogo existen DOS O MÁS productos que coinciden con ese pedido, NO adivines y NO agregues ninguno de esos productos a "items". En su lugar, escribe un aviso claro en "observaciones" indicando que falta confirmar la presentación y enumera TODAS las opciones coincidentes del catálogo con su disponibilidad actual (usa "Disponible: X" si stock > 0, o "Agotado" si stock es 0). Ejemplo: "El cliente pidió Cocuy sin especificar presentación. Opciones en catálogo: COCUY CLARITO 0,70 lts (Agotado) / COCUY 1 Litro (Disponible: 5). Confirmar con el cliente."\n' +
+      '4. COINCIDENCIA CLARA Y PRODUCTOS AGOTADOS: Si el cliente sí especifica suficiente detalle para identificar un único producto (incluso con errores de ortografía, abreviaturas o diferencias de punto/coma como 0.70 vs 0,70), O si solo existe una única presentación de ese producto en el catálogo, INCLÚYELO en "items" usando su "id" y "nombre" exactos, AUNQUE su "stock" sea 0 (para que la App le muestre al dueño el aviso de producto agotado).\n' +
+      '5. Si el cliente pide algo que NO existe en absoluto en el catálogo, menciónalo brevemente en "observaciones".\n' +
+      '6. "cantidad" debe ser siempre un número entero positivo (si no especifica cantidad, asume 1).\n' +
+      '7. En "tipoPago", usa "credito" si el cliente pide fiado, abono o crédito; de lo contrario usa "contado".\n' +
+      '8. Si todos los productos pedidos se identificaron sin dudas y existen en el catálogo, deja "observaciones" como cadena vacía "".';
 
     const modelos = await obtenerModelosDiversos(apiKey);
     let textoRespuesta = null;
