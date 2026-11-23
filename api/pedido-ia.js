@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
   }
@@ -9,7 +9,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { mensaje, productos } = req.body || {};
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    const { mensaje, productos } = body;
 
     if (!mensaje || !mensaje.trim()) {
       return res.status(400).json({ error: 'El mensaje de WhatsApp está vacío' });
@@ -58,39 +59,69 @@ Reglas estrictas:
 4. "cantidad" debe ser siempre un número entero positivo (si no especifica cantidad, asume 1).
 5. En "tipoPago", usa "credito" si el cliente pide fiado, abono o crédito; de lo contrario usa "contado".`;
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-4-hydrogen:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: 'application/json'
+    const modelos = [
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-2.0-flash',
+      'gemini-4-hydrogen'
+    ];
+
+    let ultimoError = 'No se pudo conectar con Gemini';
+    let textoRespuesta = null;
+
+    for (const modelo of modelos) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.1,
+                responseMimeType: 'application/json'
+              }
+            })
           }
-        })
+        );
+
+        clearTimeout(timeoutId);
+        const data = await response.json();
+
+        if (response.ok) {
+          const texto = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (texto) {
+            textoRespuesta = texto;
+            break;
+          }
+        } else {
+          ultimoError = data?.error?.message || `Error con ${modelo}`;
+          console.warn(`Falló ${modelo} (${response.status}):`, ultimoError);
+        }
+      } catch (errModelo) {
+        ultimoError = errModelo.name === 'AbortError'
+          ? `Tiempo agotado con ${modelo}`
+          : errModelo.message;
+        console.warn(`Excepción con ${modelo}:`, ultimoError);
       }
-    );
+    }
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('Error de Gemini API:', data);
+    if (!textoRespuesta) {
       return res.status(502).json({
-        error: data?.error?.message || 'Error al consultar Gemini'
+        error: `Los servidores de IA están ocupados ahora mismo. Intenta de nuevo en unos segundos. (${ultimoError})`
       });
     }
 
-    const textoRespuesta = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!textoRespuesta) {
-      return res.status(502).json({ error: 'Gemini devolvió una respuesta vacía' });
-    }
-
-    const pedidoEstructurado = JSON.parse(textoRespuesta);
+    const soloJson = textoRespuesta.replace(/^[\s\S]*?(\{[\s\S]*\})[\s\S]*$/, '$1').trim();
+    const pedidoEstructurado = JSON.parse(soloJson);
     return res.status(200).json(pedidoEstructurado);
   } catch (error) {
     console.error('Error en /api/pedido-ia:', error);
     return res.status(500).json({ error: 'Error interno procesando el pedido con IA' });
   }
-}
+};
